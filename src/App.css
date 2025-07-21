@@ -1,0 +1,1127 @@
+/* ===== GLOBAL STYLES ===== */
+:root {
+    --primary-white: #ffffff;
+    --primary-black: #000000;
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --text-light: rgba(255, 255, 255, 0.9);
+    --text-medium: rgba(255, 255, 255, 0.8);
+    --font-family: 'DM Sans', sans-serif;
+    --transition-smooth: all 0.3s ease;
+    --border-radius-full: 100px;
+    --spacing-xs: 20px;
+    --spacing-sm: 40px;
+    --spacing-md: 60px;
+    --spacing-lg: 80px;
+    --header-height: 80px;
+}
+
+html {
+    overflow-x: hidden;
+}
+
+.App {
+    overflow-x: hidden;
+    width: 100%;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background: var(--primary-black);
+    overflow-x: hidden; /* Prevent horizontal scrolling */
+    overflow-y: auto; /* Allow vertical scrolling */
+    font-family: var(--font-family);
+}
+
+/* ===== LAYOUT CONTAINERS ===== */
+.canvas-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+.canvas-container canvas {
+    display: block;
+}
+
+/* ===== HEADER NAVIGATION ===== */
+.main-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: var(--header-height);
+    z-index: 400;
+    background: linear-gradient(to bottom, 
+        rgba(0, 0, 0, 0.2) 0%,
+        rgba(0, 0, 0, 0.1) 2%,
+        rgba(0, 0, 0, 0) 100%
+    );
+    backdrop-filter: blur(5px);
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding: 0 var(--spacing-sm);
+}
+
+.header-logo {
+    height: 40px;
+    width: auto;
+    margin-left: 50px;
+    filter: drop-shadow(0 0 5px var(--primary-white));
+    transition: var(--transition-smooth);
+}
+
+.main-nav {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.nav-item {
+    font-family: var(--font-family);
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--primary-white);
+    text-decoration: none;
+    transition: var(--transition-smooth);
+    position: relative;
+}
+
+.nav-item:hover {
+    color: var(--text-medium);
+    transform: translateY(-2px);
+}
+
+.nav-item::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--primary-white);
+    transition: width 0.3s ease;
+}
+
+.nav-item:hover::after {
+    width: 100%;
+}
+
+/* ===== GLASS BUTTON COMPONENT ===== */
+.glass-button {
+    font-family: var(--font-family);
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--primary-white);
+    text-decoration: none;
+    padding: 12px 24px;
+    border-radius: var(--border-radius-full);
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    transition: var(--transition-smooth);
+    position: relative;
+    overflow: hidden;
+    margin-right: var(--spacing-sm);
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.glass-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.6s ease;
+}
+
+.glass-button:hover::before {
+    left: 100%;
+}
+
+.glass-button:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(255, 255, 255, 0.1);
+}
+
+/* ===== MAIN LOGO OVERLAY ===== */
+.logo-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    pointer-events: none;
+}
+
+.main-logo {
+    width: 1000px;
+    height: auto;
+    opacity: 1;
+    position: relative;
+    z-index: 2;
+}
+
+.logo-glow {
+    width: 1000px;
+    height: auto;
+    opacity: 0.6;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    filter: blur(30px);
+    mix-blend-mode: lighten;
+}
+
+/* ===== VISUAL EFFECTS ===== */
+.glow-flare {
+    position: absolute;
+    bottom: 15%;
+    left: -10%;
+    width: 600px;
+    height: 600px;
+    background: linear-gradient(45deg, 
+        rgba(255, 255, 255, 1) 0%, 
+        rgba(255, 255, 255, 0.8) 20%, 
+        rgba(255, 255, 255, 0.6) 40%, 
+        rgba(255, 255, 255, 0.3) 60%, 
+        transparent 80%);
+    border-radius: 0;
+    filter: blur(100px);
+    pointer-events: none;
+    animation: pulse 3s ease-in-out infinite alternate;
+    z-index: 5;
+    mix-blend-mode: color-dodge;
+}
+
+.glow-flare::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    height: 300px;
+    background: linear-gradient(45deg, 
+        rgba(255, 255, 255, 0.9) 0%, 
+        rgba(255, 255, 255, 0.6) 30%, 
+        rgba(255, 255, 255, 0.4) 60%, 
+        transparent 80%);
+    border-radius: 0;
+    filter: blur(20px);
+    mix-blend-mode: color-dodge;
+}
+
+.glow-flare::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 120px;
+    height: 120px;
+    background: linear-gradient(45deg, 
+        rgba(255, 255, 255, 1) 0%, 
+        rgba(255, 255, 255, 0.9) 40%, 
+        rgba(255, 255, 255, 0.6) 70%, 
+        transparent 100%);
+    border-radius: 0;
+    filter: blur(100px);
+    mix-blend-mode: color-dodge;
+}
+
+.gradient-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(to left, 
+        rgba(0, 0, 0, 0.5) 0%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    z-index: 100;
+    pointer-events: none;
+}
+
+/* ===== FOOTER ELEMENTS ===== */
+.tagline {
+    position: absolute;
+    bottom: var(--spacing-md);
+    left: var(--spacing-md);
+    font-family: var(--font-family);
+    font-size: 18px;
+    font-weight: 300;
+    color: var(--primary-white);
+    z-index: 150;
+    opacity: var(--text-light);
+    line-height: 1.4;
+    max-width: 400px;
+    pointer-events: none;
+}
+
+.scroll-indicator {
+    position: absolute;
+    bottom: var(--spacing-md);
+    right: var(--spacing-md);
+    z-index: 150;
+    opacity: 0.8;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    animation: bounce 2s infinite;
+}
+
+.scroll-indicator:hover {
+    opacity: 1;
+    transform: translateY(-3px);
+}
+
+.scroll-indicator svg {
+    width: 32px;
+    height: 32px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes pulse {
+    0% { 
+        opacity: 0.8; 
+        transform: scale(1); 
+    }
+    100% { 
+        opacity: 1; 
+        transform: scale(1.2); 
+    }
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-8px);
+    }
+    60% {
+        transform: translateY(-4px);
+    }
+}
+
+
+/* ===== FADE OUT OVERLAY ===== */
+.fade-out-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background-color: #000000;
+    z-index: 160;
+    pointer-events: none;
+    opacity: 0;
+}
+
+/* ===== TRANSITION PAGE ===== */
+.transition-page {
+    width: 100%;
+    height: 150vh;
+    position: relative;
+    background-color: #000000;
+    z-index: 250;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.transition-content {
+    max-width: 1200px;
+    padding: 0 var(--spacing-sm);
+    padding-top: 70vh;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
+}
+
+.transition-text-container {
+    margin: 0;
+    position: relative;
+    z-index: 10;
+}
+
+.transition-text {
+    font-family: var(--font-family) !important;
+    font-weight: 700 !important;
+    font-size: clamp(3rem, 8vw, 8rem) !important;
+    line-height: 1.1 !important;
+    color: var(--primary-white) !important;
+    letter-spacing: -0.02em !important;
+    margin: 0 !important;
+}
+
+.orb-container {
+    width: 1000px;
+    height: 1000px;
+    position: relative;
+    margin-top: -350px;
+    margin-bottom: var(--spacing-lg);
+    margin-left: auto;
+    margin-right: auto;
+    z-index: 5;
+    opacity: 0.8;
+}
+
+.orb-container > div {
+    transform: scale(6);
+    transform-origin: center;
+}
+
+/* ===== PRODUCT PAGE (PAGE 3) ===== */
+.product-page {
+    width: 100%;
+    min-height: 100vh;
+    position: relative;
+    background-color: #0D0D0D;
+    border-top: 1px solid #333;
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-lg) var(--spacing-sm);
+}
+
+.product-content {
+    width: 100%;
+    max-width: 1400px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-lg);
+}
+
+.product-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    height: 100%;
+    min-height: 60vh;
+}
+
+.product-right {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    min-height: 60vh;
+}
+
+/* ===== METALLIC OBJECT ===== */
+.metallic-object-container {
+    width: 500px;
+    height: 500px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    z-index: 10;
+    perspective: 1000px; /* Enable 3D perspective */
+}
+
+.metallic-object {
+    width: 100%;
+    height: auto;
+    max-width: 500px;
+    filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.1));
+    opacity: 0.9;
+    
+    /* Face left at -70 degrees and spin */
+    animation: spinLeft70 10s linear infinite;
+    transform-origin: center center;
+}
+
+/* ===== METALLIC OBJECT ANIMATIONS ===== */
+@keyframes spinLeft70 {
+    from {
+        transform: rotateY(-70deg) rotateZ(0deg);
+    }
+    to {
+        transform: rotateY(-70deg) rotateZ(360deg);
+    }
+}
+
+
+
+
+
+/* ===== TAIL SWIRLING ANIMATIONS ===== */
+@keyframes tailSwirl {
+    0% { 
+        transform: translateY(-50%) scaleX(1) rotate(0deg);
+        opacity: 0.4;
+    }
+    25% { 
+        transform: translateY(-50%) scaleX(1.2) rotate(5deg);
+        opacity: 0.7;
+    }
+    50% { 
+        transform: translateY(-50%) scaleX(0.8) rotate(-3deg);
+        opacity: 0.9;
+    }
+    75% { 
+        transform: translateY(-50%) scaleX(1.1) rotate(4deg);
+        opacity: 0.6;
+    }
+    100% { 
+        transform: translateY(-50%) scaleX(1) rotate(0deg);
+        opacity: 0.4;
+    }
+}
+
+@keyframes tailSwirlBlue {
+    0% { 
+        transform: translateY(-50%) scaleX(1) rotate(0deg);
+        opacity: 0.5;
+    }
+    30% { 
+        transform: translateY(-50%) scaleX(1.15) rotate(3deg);
+        opacity: 0.8;
+    }
+    60% { 
+        transform: translateY(-50%) scaleX(0.9) rotate(-2deg);
+        opacity: 0.9;
+    }
+    90% { 
+        transform: translateY(-50%) scaleX(1.05) rotate(2deg);
+        opacity: 0.7;
+    }
+    100% { 
+        transform: translateY(-50%) scaleX(1) rotate(0deg);
+        opacity: 0.5;
+    }
+}
+
+/* Individual tail movement patterns for natural swirling */
+@keyframes tailSwirl1 {
+    0% { transform: translateY(-50%) scaleX(1) rotate(0deg) scaleY(1); }
+    25% { transform: translateY(-50%) scaleX(1.3) rotate(8deg) scaleY(0.8); }
+    50% { transform: translateY(-50%) scaleX(0.7) rotate(-5deg) scaleY(1.2); }
+    75% { transform: translateY(-50%) scaleX(1.2) rotate(6deg) scaleY(0.9); }
+    100% { transform: translateY(-50%) scaleX(1) rotate(0deg) scaleY(1); }
+}
+
+@keyframes tailSwirl2 {
+    0% { transform: translateY(-50%) scaleX(1) rotate(0deg) scaleY(1); }
+    20% { transform: translateY(-50%) scaleX(1.1) rotate(-4deg) scaleY(1.1); }
+    60% { transform: translateY(-50%) scaleX(0.9) rotate(7deg) scaleY(0.8); }
+    80% { transform: translateY(-50%) scaleX(1.25) rotate(-3deg) scaleY(1.05); }
+    100% { transform: translateY(-50%) scaleX(1) rotate(0deg) scaleY(1); }
+}
+
+@keyframes tailSwirl3 {
+    0% { transform: translateY(-50%) scaleX(1) rotate(0deg) scaleY(1); }
+    30% { transform: translateY(-50%) scaleX(0.8) rotate(9deg) scaleY(1.3); }
+    70% { transform: translateY(-50%) scaleX(1.4) rotate(-6deg) scaleY(0.7); }
+    100% { transform: translateY(-50%) scaleX(1) rotate(0deg) scaleY(1); }
+}
+
+@keyframes tailSwirl4 {
+    0% { transform: translateY(-50%) scaleX(1) rotate(0deg) scaleY(1); }
+    40% { transform: translateY(-50%) scaleX(1.2) rotate(-7deg) scaleY(0.9); }
+    80% { transform: translateY(-50%) scaleX(0.85) rotate(4deg) scaleY(1.15); }
+    100% { transform: translateY(-50%) scaleX(1) rotate(0deg) scaleY(1); }
+}
+
+@keyframes tailSwirl5 {
+    0% { transform: translateY(-50%) scaleX(1) rotate(0deg) scaleY(1); }
+    15% { transform: translateY(-50%) scaleX(1.35) rotate(5deg) scaleY(0.8); }
+    45% { transform: translateY(-50%) scaleX(0.75) rotate(-8deg) scaleY(1.25); }
+    85% { transform: translateY(-50%) scaleX(1.15) rotate(3deg) scaleY(0.95); }
+    100% { transform: translateY(-50%) scaleX(1) rotate(0deg) scaleY(1); }
+}
+
+@keyframes tailSwirl6 {
+    0% { transform: translateY(-50%) scaleX(1) rotate(0deg) scaleY(1); }
+    35% { transform: translateY(-50%) scaleX(0.9) rotate(6deg) scaleY(1.2); }
+    65% { transform: translateY(-50%) scaleX(1.3) rotate(-4deg) scaleY(0.85); }
+    90% { transform: translateY(-50%) scaleX(1.05) rotate(2deg) scaleY(1.1); }
+    100% { transform: translateY(-50%) scaleX(1) rotate(0deg) scaleY(1); }
+}
+
+/* ===== PARTICLE STYLES AND ANIMATIONS ===== */
+/* NOTE: The particle flow system now uses Three.js for natural physics-based movement.
+   The CSS particle animations below are kept for reference but are no longer used
+   in the product page particle flow effect. */
+.particle {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    opacity: 0;
+}
+
+.particle::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+}
+
+.particle::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -25px;
+    width: 30px;
+    height: 2px;
+    border-radius: 1px;
+    transform: translateY(-50%);
+    z-index: 1;
+}
+
+.incoming-particle {
+    background: radial-gradient(circle, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.8) 50%, rgba(255, 255, 255, 0) 100%);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.8), 0 0 16px rgba(255, 255, 255, 0.4);
+}
+
+.incoming-particle::before {
+    background: radial-gradient(circle, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.6) 70%, rgba(255, 255, 255, 0) 100%);
+}
+
+.incoming-particle::after {
+    background: linear-gradient(to right, 
+        rgba(255, 255, 255, 0) 0%, 
+        rgba(255, 255, 255, 0.3) 20%, 
+        rgba(255, 255, 255, 0.6) 60%, 
+        rgba(255, 255, 255, 0.9) 100%);
+    box-shadow: 0 0 4px rgba(255, 255, 255, 0.4);
+    animation: tailSwirl 2s ease-in-out infinite;
+}
+
+.outgoing-particle {
+    background: radial-gradient(circle, rgba(135, 206, 250, 1) 0%, rgba(135, 206, 250, 0.8) 50%, rgba(135, 206, 250, 0) 100%);
+    box-shadow: 0 0 8px rgba(135, 206, 250, 0.8), 0 0 16px rgba(135, 206, 250, 0.4);
+}
+
+.outgoing-particle::before {
+    background: radial-gradient(circle, rgba(135, 206, 250, 1) 0%, rgba(135, 206, 250, 0.6) 70%, rgba(135, 206, 250, 0) 100%);
+}
+
+.outgoing-particle::after {
+    background: linear-gradient(to right, 
+        rgba(135, 206, 250, 0) 0%, 
+        rgba(135, 206, 250, 0.3) 20%, 
+        rgba(135, 206, 250, 0.6) 60%, 
+        rgba(135, 206, 250, 0.9) 100%);
+    box-shadow: 0 0 4px rgba(135, 206, 250, 0.4);
+    animation: tailSwirlBlue 2s ease-in-out infinite;
+}
+
+/* Incoming particle animations - curved paths converging with comet tails */
+/* Using dynamic generation for 90 particles with 10 base patterns */
+.incoming-particle { 
+  animation-duration: 4.5s; 
+  animation-timing-function: ease-in-out; 
+  animation-iteration-count: infinite; 
+}
+
+/* Pattern A particles (1-9) */
+.incoming-particle.particle-1, .incoming-particle.particle-11, .incoming-particle.particle-21, .incoming-particle.particle-31, .incoming-particle.particle-41, .incoming-particle.particle-51, .incoming-particle.particle-61, .incoming-particle.particle-71, .incoming-particle.particle-81 { animation-name: flowIncoming1; }
+.incoming-particle.particle-2, .incoming-particle.particle-12, .incoming-particle.particle-22, .incoming-particle.particle-32, .incoming-particle.particle-42, .incoming-particle.particle-52, .incoming-particle.particle-62, .incoming-particle.particle-72, .incoming-particle.particle-82 { animation-name: flowIncoming2; }
+.incoming-particle.particle-3, .incoming-particle.particle-13, .incoming-particle.particle-23, .incoming-particle.particle-33, .incoming-particle.particle-43, .incoming-particle.particle-53, .incoming-particle.particle-63, .incoming-particle.particle-73, .incoming-particle.particle-83 { animation-name: flowIncoming3; }
+.incoming-particle.particle-4, .incoming-particle.particle-14, .incoming-particle.particle-24, .incoming-particle.particle-34, .incoming-particle.particle-44, .incoming-particle.particle-54, .incoming-particle.particle-64, .incoming-particle.particle-74, .incoming-particle.particle-84 { animation-name: flowIncoming4; }
+.incoming-particle.particle-5, .incoming-particle.particle-15, .incoming-particle.particle-25, .incoming-particle.particle-35, .incoming-particle.particle-45, .incoming-particle.particle-55, .incoming-particle.particle-65, .incoming-particle.particle-75, .incoming-particle.particle-85 { animation-name: flowIncoming5; }
+.incoming-particle.particle-6, .incoming-particle.particle-16, .incoming-particle.particle-26, .incoming-particle.particle-36, .incoming-particle.particle-46, .incoming-particle.particle-56, .incoming-particle.particle-66, .incoming-particle.particle-76, .incoming-particle.particle-86 { animation-name: flowIncoming6; }
+.incoming-particle.particle-7, .incoming-particle.particle-17, .incoming-particle.particle-27, .incoming-particle.particle-37, .incoming-particle.particle-47, .incoming-particle.particle-57, .incoming-particle.particle-67, .incoming-particle.particle-77, .incoming-particle.particle-87 { animation-name: flowIncoming7; }
+.incoming-particle.particle-8, .incoming-particle.particle-18, .incoming-particle.particle-28, .incoming-particle.particle-38, .incoming-particle.particle-48, .incoming-particle.particle-58, .incoming-particle.particle-68, .incoming-particle.particle-78, .incoming-particle.particle-88 { animation-name: flowIncoming8; }
+.incoming-particle.particle-9, .incoming-particle.particle-19, .incoming-particle.particle-29, .incoming-particle.particle-39, .incoming-particle.particle-49, .incoming-particle.particle-59, .incoming-particle.particle-69, .incoming-particle.particle-79, .incoming-particle.particle-89 { animation-name: flowIncoming9; }
+.incoming-particle.particle-10, .incoming-particle.particle-20, .incoming-particle.particle-30, .incoming-particle.particle-40, .incoming-particle.particle-50, .incoming-particle.particle-60, .incoming-particle.particle-70, .incoming-particle.particle-80, .incoming-particle.particle-90 { animation-name: flowIncoming10; }
+
+/* Staggered delays for all 90 particles */
+.incoming-particle.particle-1 { animation-delay: 0s; } .incoming-particle.particle-2 { animation-delay: 0.05s; } .incoming-particle.particle-3 { animation-delay: 0.1s; } .incoming-particle.particle-4 { animation-delay: 0.15s; } .incoming-particle.particle-5 { animation-delay: 0.2s; }
+.incoming-particle.particle-6 { animation-delay: 0.25s; } .incoming-particle.particle-7 { animation-delay: 0.3s; } .incoming-particle.particle-8 { animation-delay: 0.35s; } .incoming-particle.particle-9 { animation-delay: 0.4s; } .incoming-particle.particle-10 { animation-delay: 0.45s; }
+.incoming-particle.particle-11 { animation-delay: 0.5s; } .incoming-particle.particle-12 { animation-delay: 0.55s; } .incoming-particle.particle-13 { animation-delay: 0.6s; } .incoming-particle.particle-14 { animation-delay: 0.65s; } .incoming-particle.particle-15 { animation-delay: 0.7s; }
+.incoming-particle.particle-16 { animation-delay: 0.75s; } .incoming-particle.particle-17 { animation-delay: 0.8s; } .incoming-particle.particle-18 { animation-delay: 0.85s; } .incoming-particle.particle-19 { animation-delay: 0.9s; } .incoming-particle.particle-20 { animation-delay: 0.95s; }
+.incoming-particle.particle-21 { animation-delay: 1s; } .incoming-particle.particle-22 { animation-delay: 1.05s; } .incoming-particle.particle-23 { animation-delay: 1.1s; } .incoming-particle.particle-24 { animation-delay: 1.15s; } .incoming-particle.particle-25 { animation-delay: 1.2s; }
+.incoming-particle.particle-26 { animation-delay: 1.25s; } .incoming-particle.particle-27 { animation-delay: 1.3s; } .incoming-particle.particle-28 { animation-delay: 1.35s; } .incoming-particle.particle-29 { animation-delay: 1.4s; } .incoming-particle.particle-30 { animation-delay: 1.45s; }
+.incoming-particle.particle-31 { animation-delay: 1.5s; } .incoming-particle.particle-32 { animation-delay: 1.55s; } .incoming-particle.particle-33 { animation-delay: 1.6s; } .incoming-particle.particle-34 { animation-delay: 1.65s; } .incoming-particle.particle-35 { animation-delay: 1.7s; }
+.incoming-particle.particle-36 { animation-delay: 1.75s; } .incoming-particle.particle-37 { animation-delay: 1.8s; } .incoming-particle.particle-38 { animation-delay: 1.85s; } .incoming-particle.particle-39 { animation-delay: 1.9s; } .incoming-particle.particle-40 { animation-delay: 1.95s; }
+.incoming-particle.particle-41 { animation-delay: 2s; } .incoming-particle.particle-42 { animation-delay: 2.05s; } .incoming-particle.particle-43 { animation-delay: 2.1s; } .incoming-particle.particle-44 { animation-delay: 2.15s; } .incoming-particle.particle-45 { animation-delay: 2.2s; }
+.incoming-particle.particle-46 { animation-delay: 2.25s; } .incoming-particle.particle-47 { animation-delay: 2.3s; } .incoming-particle.particle-48 { animation-delay: 2.35s; } .incoming-particle.particle-49 { animation-delay: 2.4s; } .incoming-particle.particle-50 { animation-delay: 2.45s; }
+.incoming-particle.particle-51 { animation-delay: 2.5s; } .incoming-particle.particle-52 { animation-delay: 2.55s; } .incoming-particle.particle-53 { animation-delay: 2.6s; } .incoming-particle.particle-54 { animation-delay: 2.65s; } .incoming-particle.particle-55 { animation-delay: 2.7s; }
+.incoming-particle.particle-56 { animation-delay: 2.75s; } .incoming-particle.particle-57 { animation-delay: 2.8s; } .incoming-particle.particle-58 { animation-delay: 2.85s; } .incoming-particle.particle-59 { animation-delay: 2.9s; } .incoming-particle.particle-60 { animation-delay: 2.95s; }
+.incoming-particle.particle-61 { animation-delay: 3s; } .incoming-particle.particle-62 { animation-delay: 3.05s; } .incoming-particle.particle-63 { animation-delay: 3.1s; } .incoming-particle.particle-64 { animation-delay: 3.15s; } .incoming-particle.particle-65 { animation-delay: 3.2s; }
+.incoming-particle.particle-66 { animation-delay: 3.25s; } .incoming-particle.particle-67 { animation-delay: 3.3s; } .incoming-particle.particle-68 { animation-delay: 3.35s; } .incoming-particle.particle-69 { animation-delay: 3.4s; } .incoming-particle.particle-70 { animation-delay: 3.45s; }
+.incoming-particle.particle-71 { animation-delay: 3.5s; } .incoming-particle.particle-72 { animation-delay: 3.55s; } .incoming-particle.particle-73 { animation-delay: 3.6s; } .incoming-particle.particle-74 { animation-delay: 3.65s; } .incoming-particle.particle-75 { animation-delay: 3.7s; }
+.incoming-particle.particle-76 { animation-delay: 3.75s; } .incoming-particle.particle-77 { animation-delay: 3.8s; } .incoming-particle.particle-78 { animation-delay: 3.85s; } .incoming-particle.particle-79 { animation-delay: 3.9s; } .incoming-particle.particle-80 { animation-delay: 3.95s; }
+.incoming-particle.particle-81 { animation-delay: 4s; } .incoming-particle.particle-82 { animation-delay: 4.05s; } .incoming-particle.particle-83 { animation-delay: 4.1s; } .incoming-particle.particle-84 { animation-delay: 4.15s; } .incoming-particle.particle-85 { animation-delay: 4.2s; }
+.incoming-particle.particle-86 { animation-delay: 4.25s; } .incoming-particle.particle-87 { animation-delay: 4.3s; } .incoming-particle.particle-88 { animation-delay: 4.35s; } .incoming-particle.particle-89 { animation-delay: 4.4s; } .incoming-particle.particle-90 { animation-delay: 4.45s; }
+
+/* Simplified tail swirl patterns for all 90 incoming particles */
+.incoming-particle::after { 
+  animation: tailSwirl 2.2s ease-in-out infinite; 
+}
+
+/* Varied tail timings using modulo patterns */
+.incoming-particle.particle-1::after, .incoming-particle.particle-11::after, .incoming-particle.particle-21::after, .incoming-particle.particle-31::after, .incoming-particle.particle-41::after, .incoming-particle.particle-51::after, .incoming-particle.particle-61::after, .incoming-particle.particle-71::after, .incoming-particle.particle-81::after { animation-duration: 2s; }
+.incoming-particle.particle-2::after, .incoming-particle.particle-12::after, .incoming-particle.particle-22::after, .incoming-particle.particle-32::after, .incoming-particle.particle-42::after, .incoming-particle.particle-52::after, .incoming-particle.particle-62::after, .incoming-particle.particle-72::after, .incoming-particle.particle-82::after { animation-duration: 2.2s; }
+.incoming-particle.particle-3::after, .incoming-particle.particle-13::after, .incoming-particle.particle-23::after, .incoming-particle.particle-33::after, .incoming-particle.particle-43::after, .incoming-particle.particle-53::after, .incoming-particle.particle-63::after, .incoming-particle.particle-73::after, .incoming-particle.particle-83::after { animation-duration: 1.8s; }
+.incoming-particle.particle-4::after, .incoming-particle.particle-14::after, .incoming-particle.particle-24::after, .incoming-particle.particle-34::after, .incoming-particle.particle-44::after, .incoming-particle.particle-54::after, .incoming-particle.particle-64::after, .incoming-particle.particle-74::after, .incoming-particle.particle-84::after { animation-duration: 2.4s; }
+.incoming-particle.particle-5::after, .incoming-particle.particle-15::after, .incoming-particle.particle-25::after, .incoming-particle.particle-35::after, .incoming-particle.particle-45::after, .incoming-particle.particle-55::after, .incoming-particle.particle-65::after, .incoming-particle.particle-75::after, .incoming-particle.particle-85::after { animation-duration: 1.9s; }
+.incoming-particle.particle-6::after, .incoming-particle.particle-16::after, .incoming-particle.particle-26::after, .incoming-particle.particle-36::after, .incoming-particle.particle-46::after, .incoming-particle.particle-56::after, .incoming-particle.particle-66::after, .incoming-particle.particle-76::after, .incoming-particle.particle-86::after { animation-duration: 2.3s; }
+.incoming-particle.particle-7::after, .incoming-particle.particle-17::after, .incoming-particle.particle-27::after, .incoming-particle.particle-37::after, .incoming-particle.particle-47::after, .incoming-particle.particle-57::after, .incoming-particle.particle-67::after, .incoming-particle.particle-77::after, .incoming-particle.particle-87::after { animation-duration: 2.1s; }
+.incoming-particle.particle-8::after, .incoming-particle.particle-18::after, .incoming-particle.particle-28::after, .incoming-particle.particle-38::after, .incoming-particle.particle-48::after, .incoming-particle.particle-58::after, .incoming-particle.particle-68::after, .incoming-particle.particle-78::after, .incoming-particle.particle-88::after { animation-duration: 2.5s; }
+.incoming-particle.particle-9::after, .incoming-particle.particle-19::after, .incoming-particle.particle-29::after, .incoming-particle.particle-39::after, .incoming-particle.particle-49::after, .incoming-particle.particle-59::after, .incoming-particle.particle-69::after, .incoming-particle.particle-79::after, .incoming-particle.particle-89::after { animation-duration: 1.9s; }
+.incoming-particle.particle-10::after, .incoming-particle.particle-20::after, .incoming-particle.particle-30::after, .incoming-particle.particle-40::after, .incoming-particle.particle-50::after, .incoming-particle.particle-60::after, .incoming-particle.particle-70::after, .incoming-particle.particle-80::after, .incoming-particle.particle-90::after { animation-duration: 2.7s; }
+
+/* Outgoing particle animations - straight parallel paths for 80 particles */
+.outgoing-particle { 
+  animation-duration: 3s; 
+  animation-timing-function: linear; 
+  animation-iteration-count: infinite; 
+}
+
+/* Pattern distribution using 14 keyframe sets cycling */
+.outgoing-particle-1, .outgoing-particle-15, .outgoing-particle-29, .outgoing-particle-43, .outgoing-particle-57, .outgoing-particle-71 { animation-name: flowOutgoing1; }
+.outgoing-particle-2, .outgoing-particle-16, .outgoing-particle-30, .outgoing-particle-44, .outgoing-particle-58, .outgoing-particle-72 { animation-name: flowOutgoing2; }
+.outgoing-particle-3, .outgoing-particle-17, .outgoing-particle-31, .outgoing-particle-45, .outgoing-particle-59, .outgoing-particle-73 { animation-name: flowOutgoing3; }
+.outgoing-particle-4, .outgoing-particle-18, .outgoing-particle-32, .outgoing-particle-46, .outgoing-particle-60, .outgoing-particle-74 { animation-name: flowOutgoing4; }
+.outgoing-particle-5, .outgoing-particle-19, .outgoing-particle-33, .outgoing-particle-47, .outgoing-particle-61, .outgoing-particle-75 { animation-name: flowOutgoing5; }
+.outgoing-particle-6, .outgoing-particle-20, .outgoing-particle-34, .outgoing-particle-48, .outgoing-particle-62, .outgoing-particle-76 { animation-name: flowOutgoing6; }
+.outgoing-particle-7, .outgoing-particle-21, .outgoing-particle-35, .outgoing-particle-49, .outgoing-particle-63, .outgoing-particle-77 { animation-name: flowOutgoing7; }
+.outgoing-particle-8, .outgoing-particle-22, .outgoing-particle-36, .outgoing-particle-50, .outgoing-particle-64, .outgoing-particle-78 { animation-name: flowOutgoing8; }
+.outgoing-particle-9, .outgoing-particle-23, .outgoing-particle-37, .outgoing-particle-51, .outgoing-particle-65, .outgoing-particle-79 { animation-name: flowOutgoing9; }
+.outgoing-particle-10, .outgoing-particle-24, .outgoing-particle-38, .outgoing-particle-52, .outgoing-particle-66, .outgoing-particle-80 { animation-name: flowOutgoing10; }
+.outgoing-particle-11, .outgoing-particle-25, .outgoing-particle-39, .outgoing-particle-53, .outgoing-particle-67 { animation-name: flowOutgoing11; }
+.outgoing-particle-12, .outgoing-particle-26, .outgoing-particle-40, .outgoing-particle-54, .outgoing-particle-68 { animation-name: flowOutgoing12; }
+.outgoing-particle-13, .outgoing-particle-27, .outgoing-particle-41, .outgoing-particle-55, .outgoing-particle-69 { animation-name: flowOutgoing13; }
+.outgoing-particle-14, .outgoing-particle-28, .outgoing-particle-42, .outgoing-particle-56, .outgoing-particle-70 { animation-name: flowOutgoing14; }
+
+/* Staggered delays for all 80 outgoing particles */
+.outgoing-particle-1 { animation-delay: 1.5s; } .outgoing-particle-2 { animation-delay: 1.52s; } .outgoing-particle-3 { animation-delay: 1.54s; } .outgoing-particle-4 { animation-delay: 1.56s; } .outgoing-particle-5 { animation-delay: 1.58s; }
+.outgoing-particle-6 { animation-delay: 1.6s; } .outgoing-particle-7 { animation-delay: 1.62s; } .outgoing-particle-8 { animation-delay: 1.64s; } .outgoing-particle-9 { animation-delay: 1.66s; } .outgoing-particle-10 { animation-delay: 1.68s; }
+.outgoing-particle-11 { animation-delay: 1.7s; } .outgoing-particle-12 { animation-delay: 1.72s; } .outgoing-particle-13 { animation-delay: 1.74s; } .outgoing-particle-14 { animation-delay: 1.76s; } .outgoing-particle-15 { animation-delay: 1.78s; }
+.outgoing-particle-16 { animation-delay: 1.8s; } .outgoing-particle-17 { animation-delay: 1.82s; } .outgoing-particle-18 { animation-delay: 1.84s; } .outgoing-particle-19 { animation-delay: 1.86s; } .outgoing-particle-20 { animation-delay: 1.88s; }
+.outgoing-particle-21 { animation-delay: 1.9s; } .outgoing-particle-22 { animation-delay: 1.92s; } .outgoing-particle-23 { animation-delay: 1.94s; } .outgoing-particle-24 { animation-delay: 1.96s; } .outgoing-particle-25 { animation-delay: 1.98s; }
+.outgoing-particle-26 { animation-delay: 2s; } .outgoing-particle-27 { animation-delay: 2.02s; } .outgoing-particle-28 { animation-delay: 2.04s; } .outgoing-particle-29 { animation-delay: 2.06s; } .outgoing-particle-30 { animation-delay: 2.08s; }
+.outgoing-particle-31 { animation-delay: 2.1s; } .outgoing-particle-32 { animation-delay: 2.12s; } .outgoing-particle-33 { animation-delay: 2.14s; } .outgoing-particle-34 { animation-delay: 2.16s; } .outgoing-particle-35 { animation-delay: 2.18s; }
+.outgoing-particle-36 { animation-delay: 2.2s; } .outgoing-particle-37 { animation-delay: 2.22s; } .outgoing-particle-38 { animation-delay: 2.24s; } .outgoing-particle-39 { animation-delay: 2.26s; } .outgoing-particle-40 { animation-delay: 2.28s; }
+.outgoing-particle-41 { animation-delay: 2.3s; } .outgoing-particle-42 { animation-delay: 2.32s; } .outgoing-particle-43 { animation-delay: 2.34s; } .outgoing-particle-44 { animation-delay: 2.36s; } .outgoing-particle-45 { animation-delay: 2.38s; }
+.outgoing-particle-46 { animation-delay: 2.4s; } .outgoing-particle-47 { animation-delay: 2.42s; } .outgoing-particle-48 { animation-delay: 2.44s; } .outgoing-particle-49 { animation-delay: 2.46s; } .outgoing-particle-50 { animation-delay: 2.48s; }
+.outgoing-particle-51 { animation-delay: 2.5s; } .outgoing-particle-52 { animation-delay: 2.52s; } .outgoing-particle-53 { animation-delay: 2.54s; } .outgoing-particle-54 { animation-delay: 2.56s; } .outgoing-particle-55 { animation-delay: 2.58s; }
+.outgoing-particle-56 { animation-delay: 2.6s; } .outgoing-particle-57 { animation-delay: 2.62s; } .outgoing-particle-58 { animation-delay: 2.64s; } .outgoing-particle-59 { animation-delay: 2.66s; } .outgoing-particle-60 { animation-delay: 2.68s; }
+.outgoing-particle-61 { animation-delay: 2.7s; } .outgoing-particle-62 { animation-delay: 2.72s; } .outgoing-particle-63 { animation-delay: 2.74s; } .outgoing-particle-64 { animation-delay: 2.76s; } .outgoing-particle-65 { animation-delay: 2.78s; }
+.outgoing-particle-66 { animation-delay: 2.8s; } .outgoing-particle-67 { animation-delay: 2.82s; } .outgoing-particle-68 { animation-delay: 2.84s; } .outgoing-particle-69 { animation-delay: 2.86s; } .outgoing-particle-70 { animation-delay: 2.88s; }
+.outgoing-particle-71 { animation-delay: 2.9s; } .outgoing-particle-72 { animation-delay: 2.92s; } .outgoing-particle-73 { animation-delay: 2.94s; } .outgoing-particle-74 { animation-delay: 2.96s; } .outgoing-particle-75 { animation-delay: 2.98s; }
+.outgoing-particle-76 { animation-delay: 3s; } .outgoing-particle-77 { animation-delay: 3.02s; } .outgoing-particle-78 { animation-delay: 3.04s; } .outgoing-particle-79 { animation-delay: 3.06s; } .outgoing-particle-80 { animation-delay: 3.08s; }
+
+/* ===== INCOMING PARTICLE KEYFRAMES (Curved, Chaotic) ===== */
+@keyframes flowIncoming1 {
+    0% { left: 15%; top: 30%; opacity: 0; transform: rotate(-15deg); }
+    5% { left: 18%; top: 31%; opacity: 0.05; transform: rotate(-14deg); }
+    10% { left: 22%; top: 32%; opacity: 0.2; transform: rotate(-12deg); }
+    20% { left: 28%; top: 35%; opacity: 0.8; transform: rotate(-8deg); }
+    80% { left: 70%; top: 45%; opacity: 0.8; transform: rotate(10deg); }
+    90% { left: 72%; top: 47%; opacity: 0.4; transform: rotate(18deg); }
+    95% { left: 74%; top: 49%; opacity: 0.1; transform: rotate(22deg); }
+    100% { left: 75%; top: 50%; opacity: 0; transform: rotate(25deg); }
+}
+
+@keyframes flowIncoming2 {
+    0% { left: 12%; top: 20%; opacity: 0; transform: rotate(20deg); }
+    4% { left: 16%; top: 21%; opacity: 0.08; transform: rotate(19deg); }
+    8% { left: 20%; top: 22%; opacity: 0.15; transform: rotate(18deg); }
+    25% { left: 30%; top: 28%; opacity: 0.7; transform: rotate(12deg); }
+    85% { left: 72%; top: 40%; opacity: 0.7; transform: rotate(-10deg); }
+    92% { left: 73.5%; top: 44%; opacity: 0.35; transform: rotate(-5deg); }
+    96% { left: 74.5%; top: 47%; opacity: 0.08; transform: rotate(0deg); }
+    100% { left: 75%; top: 50%; opacity: 0; transform: rotate(5deg); }
+}
+
+@keyframes flowIncoming3 {
+    0% { left: 10%; top: 60%; opacity: 0; transform: rotate(-30deg); }
+    3% { left: 14%; top: 61%; opacity: 0.05; transform: rotate(-29deg); }
+    7% { left: 18%; top: 62%; opacity: 0.1; transform: rotate(-28deg); }
+    15% { left: 25%; top: 65%; opacity: 0.9; transform: rotate(-22deg); }
+    75% { left: 67%; top: 55%; opacity: 0.9; transform: rotate(15deg); }
+    88% { left: 71%; top: 53%; opacity: 0.45; transform: rotate(5deg); }
+    94% { left: 73%; top: 52%; opacity: 0.15; transform: rotate(-2deg); }
+    100% { left: 75%; top: 50%; opacity: 0; transform: rotate(-5deg); }
+}
+
+@keyframes flowIncoming4 {
+    0% { left: 13%; top: 10%; opacity: 0; transform: rotate(45deg); }
+    6% { left: 17%; top: 11%; opacity: 0.1; transform: rotate(43deg); }
+    12% { left: 21%; top: 12%; opacity: 0.2; transform: rotate(42deg); }
+    30% { left: 32%; top: 18%; opacity: 0.6; transform: rotate(35deg); }
+    80% { left: 71%; top: 35%; opacity: 0.6; transform: rotate(-20deg); }
+    90% { left: 73%; top: 41%; opacity: 0.3; transform: rotate(-10deg); }
+    95% { left: 74%; top: 46%; opacity: 0.1; transform: rotate(-5deg); }
+    100% { left: 75%; top: 50%; opacity: 0; transform: rotate(0deg); }
+}
+
+@keyframes flowIncoming5 {
+    0% { left: 11%; top: 70%; opacity: 0; transform: rotate(-45deg); }
+    4% { left: 15%; top: 71%; opacity: 0.12; transform: rotate(-43deg); }
+    9% { left: 19%; top: 72%; opacity: 0.25; transform: rotate(-42deg); }
+    18% { left: 26%; top: 75%; opacity: 0.8; transform: rotate(-35deg); }
+    78% { left: 69%; top: 60%; opacity: 0.8; transform: rotate(30deg); }
+    89% { left: 72%; top: 56%; opacity: 0.4; transform: rotate(10deg); }
+    95% { left: 74%; top: 53%; opacity: 0.1; transform: rotate(-5deg); }
+    100% { left: 75%; top: 50%; opacity: 0; transform: rotate(-15deg); }
+}
+
+@keyframes flowIncoming6 {
+    0% { left: 14%; top: 45%; opacity: 0; transform: rotate(10deg); }
+    5% { left: 18%; top: 46%; opacity: 0.09; transform: rotate(9deg); }
+    11% { left: 22%; top: 47%; opacity: 0.18; transform: rotate(8deg); }
+    22% { left: 29%; top: 52%; opacity: 0.7; transform: rotate(5deg); }
+    82% { left: 73%; top: 48%; opacity: 0.7; transform: rotate(-5deg); }
+    91% { left: 74%; top: 49%; opacity: 0.35; transform: rotate(7deg); }
+    96% { left: 74.5%; top: 49.5%; opacity: 0.08; transform: rotate(14deg); }
+    100% { left: 75%; top: 50%; opacity: 0; transform: rotate(20deg); }
+}
+
+@keyframes flowIncoming7 {
+    0% { left: 9%; top: 25%; opacity: 0; transform: rotate(-20deg); }
+    6% { left: 13%; top: 26%; opacity: 0.15; transform: rotate(-19deg); }
+    12% { left: 17%; top: 27%; opacity: 0.3; transform: rotate(-18deg); }
+    25% { left: 24%; top: 32%; opacity: 0.9; transform: rotate(-12deg); }
+    85% { left: 70%; top: 42%; opacity: 0.9; transform: rotate(25deg); }
+    92% { left: 72.5%; top: 45%; opacity: 0.45; transform: rotate(10deg); }
+    96% { left: 74%; top: 48%; opacity: 0.12; transform: rotate(-3deg); }
+    100% { left: 75%; top: 50%; opacity: 0; transform: rotate(-10deg); }
+}
+
+@keyframes flowIncoming8 {
+    0% { left: 13%; top: 80%; opacity: 0; transform: rotate(35deg); }
+    5% { left: 17%; top: 81%; opacity: 0.07; transform: rotate(33deg); }
+    10% { left: 21%; top: 82%; opacity: 0.15; transform: rotate(32deg); }
+    20% { left: 28%; top: 85%; opacity: 0.6; transform: rotate(28deg); }
+    80% { left: 71%; top: 65%; opacity: 0.6; transform: rotate(-25deg); }
+    90% { left: 73%; top: 58%; opacity: 0.3; transform: rotate(-5deg); }
+    95% { left: 74%; top: 54%; opacity: 0.08; transform: rotate(5deg); }
+    100% { left: 75%; top: 50%; opacity: 0; transform: rotate(15deg); }
+}
+
+@keyframes flowIncoming9 {
+    0% { left: 11%; top: 15%; opacity: 0; transform: rotate(-25deg); }
+    7% { left: 15%; top: 16%; opacity: 0.11; transform: rotate(-24deg); }
+    14% { left: 19%; top: 17%; opacity: 0.22; transform: rotate(-22deg); }
+    28% { left: 27%; top: 22%; opacity: 0.8; transform: rotate(-18deg); }
+    88% { left: 70%; top: 38%; opacity: 0.8; transform: rotate(20deg); }
+    94% { left: 72.5%; top: 43%; opacity: 0.4; transform: rotate(5deg); }
+    97% { left: 74%; top: 47%; opacity: 0.1; transform: rotate(-10deg); }
+    100% { left: 75%; top: 50%; opacity: 0; transform: rotate(-20deg); }
+}
+
+@keyframes flowIncoming10 {
+    0% { left: 12%; top: 55%; opacity: 0; transform: rotate(25deg); }
+    4% { left: 16%; top: 56%; opacity: 0.08; transform: rotate(24deg); }
+    8% { left: 20%; top: 57%; opacity: 0.16; transform: rotate(23deg); }
+    15% { left: 26%; top: 62%; opacity: 0.7; transform: rotate(18deg); }
+    75% { left: 72%; top: 52%; opacity: 0.7; transform: rotate(-15deg); }
+    88% { left: 73.5%; top: 51%; opacity: 0.35; transform: rotate(-5deg); }
+    94% { left: 74.5%; top: 50.5%; opacity: 0.08; transform: rotate(3deg); }
+    100% { left: 75%; top: 50%; opacity: 0; transform: rotate(10deg); }
+}
+
+@keyframes flowIncoming11 {
+    0% { left: -115px; top: 35%; opacity: 0; transform: rotate(-35deg); }
+    23% { opacity: 0.9; }
+    83% { left: 39%; top: 47%; opacity: 0.9; transform: rotate(30deg); }
+    100% { left: 50%; top: 50%; opacity: 0; transform: rotate(-5deg); }
+}
+
+@keyframes flowIncoming12 {
+    0% { left: -75px; top: 65%; opacity: 0; transform: rotate(15deg); }
+    27% { opacity: 0.8; }
+    87% { left: 44%; top: 58%; opacity: 0.8; transform: rotate(-10deg); }
+    100% { left: 50%; top: 50%; opacity: 0; transform: rotate(25deg); }
+}
+
+@keyframes flowIncoming13 {
+    0% { left: -85px; top: 28%; opacity: 0; transform: rotate(-20deg); }
+    25% { opacity: 0.7; }
+    85% { left: 42%; top: 35%; opacity: 0.7; transform: rotate(8deg); }
+    100% { left: 50%; top: 50%; opacity: 0; transform: rotate(-15deg); }
+}
+
+@keyframes flowIncoming14 {
+    0% { left: -60px; top: 72%; opacity: 0; transform: rotate(25deg); }
+    30% { opacity: 0.8; }
+    90% { left: 46%; top: 65%; opacity: 0.8; transform: rotate(-18deg); }
+    100% { left: 50%; top: 50%; opacity: 0; transform: rotate(30deg); }
+}
+
+@keyframes flowIncoming15 {
+    0% { left: -70px; top: 20%; opacity: 0; transform: rotate(-10deg); }
+    22% { opacity: 0.6; }
+    82% { left: 43%; top: 28%; opacity: 0.6; transform: rotate(12deg); }
+    100% { left: 50%; top: 50%; opacity: 0; transform: rotate(-25deg); }
+}
+
+@keyframes flowIncoming16 {
+    0% { left: -90px; top: 78%; opacity: 0; transform: rotate(18deg); }
+    28% { opacity: 0.9; }
+    88% { left: 45%; top: 72%; opacity: 0.9; transform: rotate(-22deg); }
+    100% { left: 50%; top: 50%; opacity: 0; transform: rotate(20deg); }
+}
+
+@keyframes flowIncoming17 {
+    0% { left: -55px; top: 15%; opacity: 0; transform: rotate(-30deg); }
+    26% { opacity: 0.7; }
+    86% { left: 41%; top: 22%; opacity: 0.7; transform: rotate(15deg); }
+    100% { left: 50%; top: 50%; opacity: 0; transform: rotate(-35deg); }
+}
+
+@keyframes flowIncoming18 {
+    0% { left: -80px; top: 82%; opacity: 0; transform: rotate(12deg); }
+    24% { opacity: 0.8; }
+    84% { left: 44%; top: 78%; opacity: 0.8; transform: rotate(-16deg); }
+    100% { left: 50%; top: 50%; opacity: 0; transform: rotate(28deg); }
+}
+
+@keyframes flowIncoming19 {
+    0% { left: -65px; top: 12%; opacity: 0; transform: rotate(-25deg); }
+    29% { opacity: 0.6; }
+    89% { left: 47%; top: 18%; opacity: 0.6; transform: rotate(20deg); }
+    100% { left: 50%; top: 50%; opacity: 0; transform: rotate(-18deg); }
+}
+
+@keyframes flowIncoming20 {
+    0% { left: -95px; top: 85%; opacity: 0; transform: rotate(22deg); }
+    31% { opacity: 0.8; }
+    91% { left: 48%; top: 82%; opacity: 0.8; transform: rotate(-25deg); }
+    100% { left: 50%; top: 50%; opacity: 0; transform: rotate(32deg); }
+}
+
+/* ===== OUTGOING PARTICLE KEYFRAMES (Natural Fade-Out) ===== */
+@keyframes flowOutgoing1 {
+    0% { left: 50%; top: 45%; opacity: 0; transform: scale(1); }
+    8% { left: 52%; top: 45%; opacity: 0.9; transform: scale(1); }
+    30% { left: 65%; top: 45%; opacity: 0.9; transform: scale(1); }
+    50% { left: 75%; top: 45%; opacity: 0.8; transform: scale(0.9); }
+    70% { left: 85%; top: 45%; opacity: 0.6; transform: scale(0.7); }
+    85% { left: 92%; top: 45%; opacity: 0.3; transform: scale(0.4); }
+    95% { left: 96%; top: 45%; opacity: 0.1; transform: scale(0.2); }
+    100% { left: 98%; top: 45%; opacity: 0; transform: scale(0.1); }
+}
+
+@keyframes flowOutgoing2 {
+    0% { left: 50%; top: 48%; opacity: 0; transform: scale(1); }
+    12% { left: 53%; top: 48%; opacity: 0.8; transform: scale(1); }
+    32% { left: 66%; top: 48%; opacity: 0.8; transform: scale(1); }
+    52% { left: 76%; top: 48%; opacity: 0.7; transform: scale(0.8); }
+    72% { left: 86%; top: 48%; opacity: 0.5; transform: scale(0.6); }
+    87% { left: 93%; top: 48%; opacity: 0.2; transform: scale(0.3); }
+    96% { left: 97%; top: 48%; opacity: 0.05; transform: scale(0.15); }
+    100% { left: 98%; top: 48%; opacity: 0; transform: scale(0.1); }
+}
+
+@keyframes flowOutgoing3 {
+    0% { left: 50%; top: 51%; opacity: 0; transform: scale(1); }
+    10% { left: 52%; top: 51%; opacity: 0.9; transform: scale(1); }
+    28% { left: 64%; top: 51%; opacity: 0.9; transform: scale(1); }
+    48% { left: 74%; top: 51%; opacity: 0.8; transform: scale(0.9); }
+    68% { left: 84%; top: 51%; opacity: 0.6; transform: scale(0.7); }
+    83% { left: 91%; top: 51%; opacity: 0.3; transform: scale(0.4); }
+    94% { left: 95%; top: 51%; opacity: 0.1; transform: scale(0.2); }
+    100% { left: 97%; top: 51%; opacity: 0; transform: scale(0.1); }
+}
+
+@keyframes flowOutgoing4 {
+    0% { left: 50%; top: 54%; opacity: 0; transform: scale(1); }
+    15% { left: 54%; top: 54%; opacity: 0.7; transform: scale(1); }
+    35% { left: 67%; top: 54%; opacity: 0.7; transform: scale(1); }
+    55% { left: 77%; top: 54%; opacity: 0.6; transform: scale(0.8); }
+    75% { left: 87%; top: 54%; opacity: 0.4; transform: scale(0.6); }
+    88% { left: 94%; top: 54%; opacity: 0.2; transform: scale(0.3); }
+    97% { left: 98%; top: 54%; opacity: 0.05; transform: scale(0.1); }
+    100% { left: 99%; top: 54%; opacity: 0; transform: scale(0.05); }
+}
+
+@keyframes flowOutgoing5 {
+    0% { left: 50%; top: 42%; opacity: 0; transform: scale(1); }
+    11% { left: 53%; top: 42%; opacity: 0.8; transform: scale(1); }
+    31% { left: 65%; top: 42%; opacity: 0.8; transform: scale(1); }
+    51% { left: 75%; top: 42%; opacity: 0.7; transform: scale(0.8); }
+    71% { left: 85%; top: 42%; opacity: 0.5; transform: scale(0.6); }
+    86% { left: 92%; top: 42%; opacity: 0.2; transform: scale(0.3); }
+    95% { left: 96%; top: 42%; opacity: 0.08; transform: scale(0.15); }
+    100% { left: 98%; top: 42%; opacity: 0; transform: scale(0.1); }
+}
+
+@keyframes flowOutgoing6 {
+    0% { left: 50%; top: 57%; opacity: 0; transform: scale(1); }
+    13% { left: 53%; top: 57%; opacity: 0.9; transform: scale(1); }
+    33% { left: 66%; top: 57%; opacity: 0.9; transform: scale(1); }
+    53% { left: 76%; top: 57%; opacity: 0.8; transform: scale(0.9); }
+    73% { left: 86%; top: 57%; opacity: 0.5; transform: scale(0.7); }
+    87% { left: 93%; top: 57%; opacity: 0.3; transform: scale(0.4); }
+    96% { left: 97%; top: 57%; opacity: 0.1; transform: scale(0.2); }
+    100% { left: 98%; top: 57%; opacity: 0; transform: scale(0.1); }
+}
+
+@keyframes flowOutgoing7 {
+    0% { left: 50%; top: 39%; opacity: 0; transform: scale(1); }
+    9% { left: 52%; top: 39%; opacity: 0.6; transform: scale(1); }
+    29% { left: 64%; top: 39%; opacity: 0.6; transform: scale(1); }
+    49% { left: 74%; top: 39%; opacity: 0.5; transform: scale(0.8); }
+    69% { left: 84%; top: 39%; opacity: 0.4; transform: scale(0.6); }
+    84% { left: 91%; top: 39%; opacity: 0.2; transform: scale(0.3); }
+    93% { left: 95%; top: 39%; opacity: 0.08; transform: scale(0.15); }
+    100% { left: 97%; top: 39%; opacity: 0; transform: scale(0.1); }
+}
+
+@keyframes flowOutgoing8 {
+    0% { left: 50%; top: 60%; opacity: 0; transform: scale(1); }
+    14% { left: 54%; top: 60%; opacity: 0.8; transform: scale(1); }
+    34% { left: 67%; top: 60%; opacity: 0.8; transform: scale(1); }
+    54% { left: 77%; top: 60%; opacity: 0.7; transform: scale(0.8); }
+    74% { left: 87%; top: 60%; opacity: 0.4; transform: scale(0.6); }
+    89% { left: 94%; top: 60%; opacity: 0.2; transform: scale(0.3); }
+    98% { left: 98%; top: 60%; opacity: 0.05; transform: scale(0.1); }
+    100% { left: 99%; top: 60%; opacity: 0; transform: scale(0.05); }
+}
+
+@keyframes flowOutgoing9 {
+    0% { left: 50%; top: 36%; opacity: 0; transform: scale(1); }
+    10% { left: 52%; top: 36%; opacity: 0.7; transform: scale(1); }
+    30% { left: 65%; top: 36%; opacity: 0.7; transform: scale(1); }
+    50% { left: 75%; top: 36%; opacity: 0.6; transform: scale(0.8); }
+    70% { left: 85%; top: 36%; opacity: 0.4; transform: scale(0.6); }
+    85% { left: 92%; top: 36%; opacity: 0.2; transform: scale(0.3); }
+    94% { left: 96%; top: 36%; opacity: 0.08; transform: scale(0.15); }
+    100% { left: 98%; top: 36%; opacity: 0; transform: scale(0.1); }
+}
+
+@keyframes flowOutgoing10 {
+    0% { left: 50%; top: 63%; opacity: 0; transform: scale(1); }
+    12% { left: 53%; top: 63%; opacity: 0.8; transform: scale(1); }
+    32% { left: 66%; top: 63%; opacity: 0.8; transform: scale(1); }
+    52% { left: 76%; top: 63%; opacity: 0.7; transform: scale(0.9); }
+    72% { left: 86%; top: 63%; opacity: 0.5; transform: scale(0.7); }
+    87% { left: 93%; top: 63%; opacity: 0.3; transform: scale(0.4); }
+    96% { left: 97%; top: 63%; opacity: 0.1; transform: scale(0.2); }
+    100% { left: 98%; top: 63%; opacity: 0; transform: scale(0.1); }
+}
+
+@keyframes flowOutgoing11 {
+    0% { left: 50%; top: 33%; opacity: 0; transform: scale(1); }
+    9% { left: 52%; top: 33%; opacity: 0.6; transform: scale(1); }
+    29% { left: 64%; top: 33%; opacity: 0.6; transform: scale(1); }
+    49% { left: 74%; top: 33%; opacity: 0.5; transform: scale(0.8); }
+    69% { left: 84%; top: 33%; opacity: 0.4; transform: scale(0.6); }
+    84% { left: 91%; top: 33%; opacity: 0.2; transform: scale(0.3); }
+    93% { left: 95%; top: 33%; opacity: 0.08; transform: scale(0.15); }
+    100% { left: 97%; top: 33%; opacity: 0; transform: scale(0.1); }
+}
+
+@keyframes flowOutgoing12 {
+    0% { left: 50%; top: 66%; opacity: 0; transform: scale(1); }
+    15% { left: 54%; top: 66%; opacity: 0.7; transform: scale(1); }
+    35% { left: 67%; top: 66%; opacity: 0.7; transform: scale(1); }
+    55% { left: 77%; top: 66%; opacity: 0.6; transform: scale(0.8); }
+    75% { left: 87%; top: 66%; opacity: 0.4; transform: scale(0.6); }
+    88% { left: 94%; top: 66%; opacity: 0.2; transform: scale(0.3); }
+    97% { left: 98%; top: 66%; opacity: 0.05; transform: scale(0.1); }
+    100% { left: 99%; top: 66%; opacity: 0; transform: scale(0.05); }
+}
+
+@keyframes flowOutgoing13 {
+    0% { left: 50%; top: 30%; opacity: 0; transform: scale(1); }
+    11% { left: 53%; top: 30%; opacity: 0.8; transform: scale(1); }
+    31% { left: 65%; top: 30%; opacity: 0.8; transform: scale(1); }
+    51% { left: 75%; top: 30%; opacity: 0.7; transform: scale(0.8); }
+    71% { left: 85%; top: 30%; opacity: 0.5; transform: scale(0.6); }
+    86% { left: 92%; top: 30%; opacity: 0.2; transform: scale(0.3); }
+    95% { left: 96%; top: 30%; opacity: 0.08; transform: scale(0.15); }
+    100% { left: 98%; top: 30%; opacity: 0; transform: scale(0.1); }
+}
+
+@keyframes flowOutgoing14 {
+    0% { left: 50%; top: 69%; opacity: 0; transform: scale(1); }
+    13% { left: 53%; top: 69%; opacity: 0.9; transform: scale(1); }
+    33% { left: 66%; top: 69%; opacity: 0.9; transform: scale(1); }
+    53% { left: 76%; top: 69%; opacity: 0.8; transform: scale(0.9); }
+    73% { left: 86%; top: 69%; opacity: 0.5; transform: scale(0.7); }
+    87% { left: 93%; top: 69%; opacity: 0.3; transform: scale(0.4); }
+    96% { left: 97%; top: 69%; opacity: 0.1; transform: scale(0.2); }
+    100% { left: 98%; top: 69%; opacity: 0; transform: scale(0.1); }
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+    .main-logo,
+    .logo-glow {
+        width: 80vw;
+    }
+    
+    .main-nav {
+        gap: var(--spacing-xs);
+    }
+    
+    .tagline {
+        font-size: 16px;
+        max-width: 300px;
+    }
+    
+    .transition-text {
+        font-size: clamp(2rem, 6vw, 4rem) !important;
+    }
+    
+    .orb-container {
+        width: 600px;
+        height: 600px;
+        margin-top: -100px;
+        opacity: 0.8;
+    }
+    
+    .orb-container > div {
+        transform: scale(10);
+    }
+    
+    /* Product page responsive */
+    .product-content {
+        flex-direction: column;
+        text-align: center;
+        gap: var(--spacing-md);
+    }
+    
+    .product-left,
+    .product-right {
+        flex: none;
+        width: 100%;
+    }
+    
+    .metallic-object {
+        max-width: 350px;
+    }
+}
