@@ -127,3 +127,7 @@ private-key*
 .api-keys
 token.txt
 *.token
+
+# Project-specific directories
+.references/
+.backup/
