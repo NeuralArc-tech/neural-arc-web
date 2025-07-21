@@ -131,3 +131,6 @@ token.txt
 # Project-specific directories
 .references/
 .backup/
+
+# Documentation (keep local only)
+SSH_SETUP_GUIDE.md
