@@ -71,6 +71,11 @@
     object-fit: contain;
     filter: drop-shadow(0px 0px 25px rgba(0, 0, 0, 0.8)) 
             drop-shadow(0px 0px 50px rgba(0, 0, 0, 0.6));
+    transition: opacity 0.3s ease;
+}
+
+.scrub-item:hover .scrub-icon {
+    opacity: 0;
 }
 
 .scrub-label {
@@ -80,11 +85,6 @@
     color: #FFFFFF;
     text-align: center;
     font-weight: 400;
-    transition: opacity 0.3s ease;
-}
-
-.scrub-item:hover .scrub-label {
-    opacity: 0;
 }
 
 .scrub-pixel-transition {

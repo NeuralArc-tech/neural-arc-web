@@ -24,9 +24,9 @@ function ProductDetails({ onBack }) {
               secondContent={
                 <img src="/assets/textscrub-after-hover.png" alt="Text Scrub Hover" className="scrub-icon-hover" />
               }
-              gridSize={15}
+              gridSize={30}
               pixelColor="white"
-              animationStepDuration={0.4}
+              animationStepDuration={0.3}
               className="scrub-pixel-transition"
               aspectRatio="0"
             />
@@ -40,9 +40,9 @@ function ProductDetails({ onBack }) {
               secondContent={
                 <img src="/assets/tablescrub-after-hover.png" alt="Table Scrub Hover" className="scrub-icon-hover" />
               }
-              gridSize={15}
+              gridSize={30}
               pixelColor="white"
-              animationStepDuration={0.4}
+              animationStepDuration={0.3}
               className="scrub-pixel-transition"
               aspectRatio="0"
             />
@@ -56,9 +56,9 @@ function ProductDetails({ onBack }) {
               secondContent={
                 <img src="/assets/timeseriesscrub-after-hover.png" alt="Timeseries Scrub Hover" className="scrub-icon-hover" />
               }
-              gridSize={15}
+              gridSize={30}
               pixelColor="white"
-              animationStepDuration={0.4}
+              animationStepDuration={0.3}
               className="scrub-pixel-transition"
               aspectRatio="0"
             />
@@ -72,9 +72,9 @@ function ProductDetails({ onBack }) {
               secondContent={
                 <img src="/assets/streamscrub-after-hover.png" alt="Stream Scrub Hover" className="scrub-icon-hover" />
               }
-              gridSize={15}
+              gridSize={30}
               pixelColor="white"
-              animationStepDuration={0.4}
+              animationStepDuration={0.3}
               className="scrub-pixel-transition"
               aspectRatio="0"
             />
