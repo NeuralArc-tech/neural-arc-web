@@ -1,0 +1,157 @@
+.product-details-page {
+    --scrub-icon-size: 330px; /* Change this single value to resize all icons */
+    width: 100%;
+    min-height: 100vh;
+    position: relative;
+    background-color: #0D0D0D;
+    border-top: 1px solid #333;
+    z-index: 300;
+    display: flex;
+    flex-direction: column;
+    padding-top: 80px;
+}
+
+.product-header {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 10%;
+    margin-bottom: 10%;
+}
+
+.product-title-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 60px;
+}
+
+.scrub-types-grid {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 80px;
+    flex-wrap: wrap;
+}
+
+.decorative-cubes {
+    position: absolute;
+    top: -50%;
+    left: -10%;
+    width: 300px;
+    height: 300px;
+    z-index: 1;
+    opacity: 0.8;
+}
+
+.decorative-pipe {
+    position: absolute;
+    bottom: -30%;
+    right: -10%;
+    width: 300px;
+    height: 300px;
+    z-index: 1;
+    opacity: 0.8;
+}
+
+.scrub-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    z-index: 2;
+}
+
+.scrub-icon {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0px 0px 25px rgba(0, 0, 0, 0.8)) 
+            drop-shadow(0px 0px 50px rgba(0, 0, 0, 0.6));
+}
+
+.scrub-label {
+    font-family: 'Consolas', 'Fira Code', 'Monaco', 'Courier New', monospace;
+    /* font-size: 14px; */
+    font-size: 100%;
+    color: #FFFFFF;
+    text-align: center;
+    font-weight: 400;
+    transition: opacity 0.3s ease;
+}
+
+.scrub-item:hover .scrub-label {
+    opacity: 0;
+}
+
+.scrub-pixel-transition {
+    width: var(--scrub-icon-size);
+    height: var(--scrub-icon-size);
+}
+
+.pixel-transition-container {
+    width: var(--scrub-icon-size);
+    height: var(--scrub-icon-size);
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.pixel-first-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.pixel-second-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.scrub-icon-hover {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.product-title {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+    /* font-size: 30px; */
+    font-size: 200%;
+    color: #888888;
+    margin: 0 0 1px 0;
+    letter-spacing: 1px;
+}
+
+.product-name {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    /* font-size: 80px; */
+    font-size: 500%;
+    color: #FFFFFF;
+    margin: 0;
+    letter-spacing: 2px;
+    text-align: center;
+    text-shadow: 0px 0px 5px #EA00FF;
+}
+
+.product-details-content {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

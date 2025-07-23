@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './App.css';
 import ParticleCanvas from './ParticleCanvas';
 import ScrollIndicator from './ScrollIndicator';
@@ -6,17 +6,66 @@ import ScrollReveal from './ScrollReveal';
 import FadeOutOverlay from './FadeOutOverlay';
 import Orb from './Orb';
 import ProductParticleFlow from './ProductParticleFlow';
+import ProductDetails from './ProductDetails';
 
 function App() {
+  const [currentPage, setCurrentPage] = useState('main');
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  const handleLearnMoreClick = () => {
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentPage('product-details');
+      setIsTransitioning(false);
+    }, 300);
+  };
+
+  const handleBackToMain = () => {
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentPage('main');
+      setIsTransitioning(false);
+    }, 300);
+  };
+
+  const handleProductsClick = (e) => {
+    e.preventDefault();
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentPage('product-details');
+      setIsTransitioning(false);
+    }, 300);
+  };
+
+  if (currentPage === 'product-details') {
+    return (
+      <div className={`App page-transition ${isTransitioning ? 'fade-out' : 'fade-in'}`}>
+        <header className="main-header">
+          <div className="header-content">
+            <img src="/logo/logo-web.png" alt="Neural Arc Logo" className="header-logo" />
+            <nav className="main-nav">
+              <a href="#" className="nav-item">COMPANY</a>
+              <a href="#" className="nav-item" onClick={handleProductsClick}>PRODUCTS</a>
+              <a href="#" className="nav-item" onClick={handleBackToMain}>HOME</a>
+              <a href="#" className="nav-item">FAQ</a>
+            </nav>
+            <a href="#" className="glass-button">Contact Us</a>
+          </div>
+        </header>
+        <ProductDetails onBack={handleBackToMain} />
+      </div>
+    );
+  }
+
   return (
-    <div className="App">
+    <div className={`App page-transition ${isTransitioning ? 'fade-out' : 'fade-in'}`}>
       <header className="main-header">
         <div className="header-content">
           <img src="/logo/logo-web.png" alt="Neural Arc Logo" className="header-logo" />
           <nav className="main-nav">
             <a href="#" className="nav-item">COMPANY</a>
-            <a href="#" className="nav-item">PRODUCTS</a>
-            <a href="#" className="nav-item">NEWS</a>
+            <a href="#" className="nav-item" onClick={handleProductsClick}>PRODUCTS</a>
+            <a href="#" className="nav-item" onClick={handleBackToMain}>HOME</a>
             <a href="#" className="nav-item">FAQ</a>
           </nav>
           <a href="#" className="glass-button">Contact Us</a>
@@ -61,7 +110,7 @@ function App() {
 
       {/* Third Page - Product Page */}
       <div className="product-page">
-        <ProductParticleFlow />
+        <ProductParticleFlow onLearnMoreClick={handleLearnMoreClick} />
         <div className="product-content">
           {/* Left side content area (you can add product info here later) */}
           <div className="product-left">
