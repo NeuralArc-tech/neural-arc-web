@@ -61,7 +61,9 @@ jobs:
 
       - name: Install Gemini CLI and MCP Servers
         run: |
+          echo "Installing Gemini CLI..."
           npm install -g @google/gemini-cli
+          echo "Installing Playwright MCP server..."
           npm install -g @playwright/mcp@latest
           # Note: Screenshot functionality is handled by Playwright MCP
           echo "Gemini CLI and MCP servers installed successfully"
