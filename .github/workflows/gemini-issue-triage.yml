@@ -1,0 +1,58 @@
+name: 🏷️ Gemini Automated Issue Triage
+
+on:
+  issues:
+    types: [opened, reopened]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+  id-token: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'issues' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issue_comment' &&
+       contains(github.event.comment.body, '@gemini') &&
+       contains(github.event.comment.body, '/triage') &&
+       (github.event.comment.author_association == 'OWNER' ||
+        github.event.comment.author_association == 'MEMBER' ||
+        github.event.comment.author_association == 'COLLABORATOR'))
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Gemini Issue Triage
+        uses: google-gemini/gemini-cli-action@v1
+        with:
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          echo "Analyzing issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}"
+          
+          # Use Gemini CLI to analyze the issue and suggest labels
+          gemini-cli "Analyze this GitHub issue and suggest appropriate labels based on the content:
+          
+          Title: ${{ github.event.issue.title }}
+          Body: ${{ github.event.issue.body }}
+          
+          Available labels in this repository: bug, enhancement, documentation, question, good first issue, help wanted, priority-high, priority-medium, priority-low, frontend, backend, design, performance, security
+          
+          Please respond with only the label names that should be applied, separated by commas."

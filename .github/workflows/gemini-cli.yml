@@ -1,0 +1,341 @@
+name: Gemini CLI Integration
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created, edited]
+  pull_request:
+    types: [opened, synchronize, reopened]
+  pull_request_review_comment:
+    types: [created, edited]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.number || github.event.issue.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  actions: write
+  checks: write
+  discussions: write
+  id-token: write
+
+jobs:
+  gemini-automation:
+    name: Gemini CLI Automation
+    runs-on: ubuntu-latest
+
+    # Only run for users with proper permissions and @gemini mentions
+    if: |
+      (github.event_name == 'issues' && github.event.action == 'opened') ||
+      (github.event_name == 'pull_request' && github.event.action == 'opened') ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@gemini') && (github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER' || github.event.comment.author_association == 'COLLABORATOR')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@gemini') && (github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER' || github.event.comment.author_association == 'COLLABORATOR'))
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install Gemini CLI
+        run: |
+          npm install -g @google/gemini-cli
+          echo "Gemini CLI installed successfully"
+          gemini --version
+
+      - name: Configure Gemini CLI
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Configure git for commits
+          git config --global user.name "Gemini CLI Bot"
+          git config --global user.email "gemini-cli@github-actions.noreply.com"
+
+      - name: Issue Triage
+        if: github.event_name == 'issues' && github.event.action == 'opened'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          echo "🔍 Analyzing issue #$ISSUE_NUMBER for automated triage..."
+
+          # Create a comprehensive prompt for issue analysis
+          cat > issue_analysis_prompt.txt << EOF
+          You are a senior software engineer responsible for triaging GitHub issues. 
+
+          Analyze this issue and provide:
+          1. **Priority Level**: urgent, high, medium, low
+          2. **Category Labels**: bug, enhancement, feature-request, documentation, question, invalid
+          3. **Component Labels**: frontend, backend, infrastructure, ci-cd, security
+          4. **Difficulty Level**: beginner, intermediate, advanced
+          5. **Auto-Implementation**: If this is a simple task (beginner level, documentation, small change), implement it immediately
+
+          Issue Title: "$ISSUE_TITLE"
+          Issue Body: "$ISSUE_BODY"
+
+          You have full access to this repository. For simple issues (like documentation updates, small fixes, configuration changes):
+          1. Create a new branch: git checkout -b fix/issue-description
+          2. Make the necessary changes
+          3. Stage and commit: git add . && git commit -m "fix: description" 
+          4. Push: git push origin fix/issue-description
+          5. Create PR: gh pr create --title "Fix: Issue Title" --body "Closes #$ISSUE_NUMBER\n\nDetailed description of the changes made."
+
+          CRITICAL: Always use explicit --title and --body flags with gh pr create. Never use interactive mode.
+
+          Respond in this exact format:
+          Priority: [level]
+          Labels: [comma-separated list]
+          Difficulty: [level]
+
+          ## Analysis
+          [Your detailed analysis]
+
+          ## Suggested Actions
+          [Specific next steps]
+
+          ## Auto-Implementation
+          [If implemented: "✅ Implemented and created PR: [URL]" | If not: "❌ Requires manual review"]
+          EOF
+
+          # Run Gemini analysis
+          ANALYSIS=$(env -u CI_TOKEN gemini -y -m gemini-2.5-flash -p "$(cat issue_analysis_prompt.txt)")
+
+          # Extract labels from analysis
+          PRIORITY=$(echo "$ANALYSIS" | grep "Priority:" | cut -d':' -f2 | xargs)
+          LABELS=$(echo "$ANALYSIS" | grep "Labels:" | cut -d':' -f2 | xargs)
+          DIFFICULTY=$(echo "$ANALYSIS" | grep "Difficulty:" | cut -d':' -f2 | xargs)
+
+          # Apply labels using GitHub CLI
+          if [ ! -z "$LABELS" ]; then
+            IFS=',' read -ra LABEL_ARRAY <<< "$LABELS"
+            for label in "${LABEL_ARRAY[@]}"; do
+              label=$(echo "$label" | xargs)  # trim whitespace
+              gh issue edit $ISSUE_NUMBER --add-label "$label" || echo "Could not add label: $label"
+            done
+          fi
+
+          # Add priority and difficulty labels
+          [ ! -z "$PRIORITY" ] && gh issue edit $ISSUE_NUMBER --add-label "priority: $PRIORITY" || true
+          [ ! -z "$DIFFICULTY" ] && gh issue edit $ISSUE_NUMBER --add-label "difficulty: $DIFFICULTY" || true
+
+          # Post analysis as comment
+          cat > comment.md << EOF
+          ## 🤖 Automated Issue Analysis
+
+          $ANALYSIS
+
+          ---
+          *This analysis was generated by Gemini CLI. Human review recommended.*
+          EOF
+
+          gh issue comment $ISSUE_NUMBER --body-file comment.md
+
+          echo "✅ Issue triage completed for #$ISSUE_NUMBER"
+
+      - name: Pull Request Review
+        if: |
+          (github.event_name == 'pull_request' && github.event.action == 'opened') ||
+          (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@gemini')) ||
+          (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '@gemini'))
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+          COMMENT_BODY: ${{ github.event.comment.body || '' }}
+        run: |
+          echo "🔍 Analyzing pull request #$PR_NUMBER..."
+
+          # Get PR details
+          PR_DETAILS=$(gh pr view $PR_NUMBER --json title,body,files,additions,deletions,commits)
+          PR_TITLE=$(echo "$PR_DETAILS" | jq -r '.title')
+          PR_BODY=$(echo "$PR_DETAILS" | jq -r '.body // ""')
+
+          # Get changed files
+          CHANGED_FILES=$(gh pr diff $PR_NUMBER --name-only)
+
+          # Create comprehensive PR analysis prompt
+          cat > pr_analysis_prompt.txt << EOF
+          You are a senior code reviewer for a full-stack web application workspace.
+
+          Review this pull request and provide:
+          1. **Code Quality Assessment**: Rate 1-5 and explain
+          2. **Security Concerns**: Any potential security issues
+          3. **Performance Impact**: Potential performance implications
+          4. **Architecture Alignment**: How well it fits the existing architecture
+          5. **Testing Requirements**: What tests should be added/updated
+          6. **Specific Feedback**: Line-by-line suggestions for improvement
+
+          PR Title: "$PR_TITLE"
+          PR Description: "$PR_BODY"
+
+          Changed Files:
+          $CHANGED_FILES
+
+          User Comment: "$COMMENT_BODY"
+
+          Provide constructive, actionable feedback focusing on:
+          - Code quality and best practices
+          - Security implications
+          - Performance considerations  
+          - Maintainability
+          - Testing coverage
+
+          Be specific and helpful. If the code looks good, say so!
+          EOF
+
+          # Get the actual diff for detailed analysis
+          PR_DIFF=$(gh pr diff $PR_NUMBER)
+
+          # Create diff analysis file
+          cat > diff_analysis_prompt.txt << EOF
+          $(cat pr_analysis_prompt.txt)
+
+          Here is the actual code diff:
+          \`\`\`diff
+          $PR_DIFF
+          \`\`\`
+
+          Please provide a detailed code review.
+          EOF
+
+          # Run Gemini analysis
+          REVIEW=$(env -u CI_TOKEN gemini -y -m gemini-2.5-flash -p "$(cat diff_analysis_prompt.txt)")
+
+          # Post review as comment
+          cat > review_comment.md << EOF
+          ## 🤖 Automated Code Review
+
+          $REVIEW
+
+          ---
+          *This review was generated by Gemini CLI. Human review still recommended for final approval.*
+          EOF
+
+          gh pr comment $PR_NUMBER --body-file review_comment.md
+
+          echo "✅ Pull request review completed for #$PR_NUMBER"
+
+      - name: Custom Gemini Commands
+        if: |
+          (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@gemini')) ||
+          (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@gemini'))
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+        run: |
+          echo "🤖 Processing custom Gemini command..."
+
+          # Extract command from comment (everything after @gemini)
+          COMMAND=$(echo "$COMMENT_BODY" | sed -n 's/.*@gemini[[:space:]]*\(.*\)/\1/p' | head -n1)
+
+          if [ -z "$COMMAND" ]; then
+            COMMAND="Please provide assistance with this issue/PR"
+          fi
+
+          echo "Command: $COMMAND"
+
+          # Get context (issue or PR details)
+          if [ "${{ github.event.issue.pull_request }}" != "null" ] && [ "${{ github.event.issue.pull_request }}" != "" ]; then
+            # This is a PR
+            CONTEXT=$(gh pr view $ISSUE_NUMBER --json title,body,files,state)
+            CONTEXT_TYPE="pull request"
+          else
+            # This is an issue
+            CONTEXT=$(gh issue view $ISSUE_NUMBER --json title,body,state,labels)
+            CONTEXT_TYPE="issue"
+          fi
+
+          # Create context-aware prompt
+          cat > custom_command_prompt.txt << EOF
+          You are a helpful AI assistant working on a GitHub repository with full access to modify files and create pull requests.
+
+          Context: You are responding to a comment on $CONTEXT_TYPE #$ISSUE_NUMBER
+
+          $CONTEXT_TYPE Details:
+          $CONTEXT
+
+          User Request: "$COMMAND"
+
+          You have full access to this GitHub repository and can autonomously:
+          - Read and modify any files in the repository
+          - Create new files and directories
+          - Commit changes to new branches
+          - Create pull requests using the gh CLI
+          - Run git commands for version control
+
+          When the user asks you to create/update files or create a PR, you MUST:
+          1. Create a new branch: git checkout -b feature/description
+          2. Make the requested file changes
+          3. Stage changes: git add .
+          4. Commit with descriptive message: git commit -m "feat: description"
+          5. Push the branch: git push origin feature/description
+          6. Create PR with explicit flags: gh pr create --title "Descriptive Title" --body "Closes #ISSUE_NUMBER\n\nDescription of changes made."
+          7. Provide the actual PR URL from gh CLI output in your response
+
+          CRITICAL: For step 6, you MUST use explicit --title and --body flags. Never use gh pr create without these flags.
+
+          Example: gh pr create --title "Add installation instructions to README" --body "Closes #14\n\nAdded detailed installation section with prerequisites and setup steps."
+
+          IMPORTANT: Always create the PR using gh CLI with --title and --body flags. Do not use interactive mode.
+
+          If gh CLI fails, capture the exact error message and include it in your response.
+
+          For other requests, provide helpful, actionable responses with specific examples.
+          Focus on being practical and specific to this codebase context.
+          EOF
+
+          # Run Gemini analysis
+          RESPONSE=$(env -u CI_TOKEN gemini -y -m gemini-2.5-flash -p "$(cat custom_command_prompt.txt)")
+
+          # Post response as comment
+          cat > response_comment.md << EOF
+          ## 🤖 Gemini Response
+
+          > **Command**: $COMMAND
+
+          $RESPONSE
+
+          ---
+          *Generated by Gemini CLI in response to your request.*
+          EOF
+
+          if [ "${{ github.event.issue.pull_request }}" != "null" ] && [ "${{ github.event.issue.pull_request }}" != "" ]; then
+            gh pr comment $ISSUE_NUMBER --body-file response_comment.md
+          else
+            gh issue comment $ISSUE_NUMBER --body-file response_comment.md
+          fi
+
+          echo "✅ Custom command processed for #$ISSUE_NUMBER"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -f *.txt *.md
+          echo "🧹 Cleanup completed"
+
+      - name: Report Status
+        if: always()
+        run: |
+          echo "📊 Gemini CLI Automation Summary:"
+          echo "- Event: ${{ github.event_name }}"
+          echo "- Action: ${{ github.event.action }}"
+          echo "- Issue/PR: #${{ github.event.issue.number || github.event.pull_request.number }}"
+          echo "- Status: ${{ job.status }}"
