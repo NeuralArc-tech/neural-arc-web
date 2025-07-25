@@ -1077,6 +1077,20 @@ body {
     100% { left: 98%; top: 69%; opacity: 0; transform: scale(0.1); }
 }
 
+/* ===== PAGE TRANSITIONS ===== */
+.page-transition {
+    opacity: 1;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.page-transition.fade-out {
+    opacity: 0;
+}
+
+.page-transition.fade-in {
+    opacity: 1;
+}
+
 /* ===== RESPONSIVE DESIGN ===== */
 @media (max-width: 768px) {
     .main-logo,

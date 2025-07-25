@@ -1,7 +1,7 @@
 import React from 'react';
 import './ProductParticleFlow.css';
 
-const ProductParticleFlow = () => {
+const ProductParticleFlow = ({ onLearnMoreClick }) => {
     // Create array of particles - 200 particles
     const particles = Array.from({ length: 200 }, (_, i) => {
         // Randomly assign shapes
@@ -69,7 +69,7 @@ const ProductParticleFlow = () => {
                 <div className="data-scrub-subtitle">From Data Chaos to Clarity.</div>
                 
                 {/* Learn More button */}
-                <button className="learn-more-button">
+                <button className="learn-more-button" onClick={onLearnMoreClick}>
                     <span className="button-text">Learn More</span>
                     <svg className="button-arrow" width="20" height="20" viewBox="0 0 20 20">
                         <polygon points="7,5 13,10 7,15" fill="#FFFFFF" />
