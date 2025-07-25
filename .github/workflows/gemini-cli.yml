@@ -504,73 +504,53 @@ jobs:
             # Install dependencies
             if command -v bun >/dev/null 2>&1; then
               bun install
-              timeout 30s bun run dev &
+              timeout 300s bun run start &
             else
               npm install
-              timeout 30s npm run dev &
+              timeout 300s npm run start &
             fi
             
             DEV_PID=$!
-            sleep 10  # Wait for server to start
+            
+            # Wait for server to be ready
+            echo "⏳ Waiting for development server to start..."
+            for i in {1..30}; do
+              if curl -s http://localhost:3000 > /dev/null; then
+                echo "✅ Development server is ready!"
+                break
+              fi
+              echo "Waiting... ($i/30)"
+              sleep 2
+            done
             
             echo "🌐 Development server started (PID: $DEV_PID)"
           fi
           
           # Configure MCP browser automation prompt
           cat > /tmp/visual_verification_prompt.txt << EOF
-          You are a senior QA engineer with expertise in visual testing and browser automation.
+          Take screenshots of the Neural Arc website at http://localhost:3000 using Playwright MCP.
           
-          **MISSION:** Perform comprehensive visual verification of web improvements using MCP browser automation.
+          Test these viewports:
+          - Mobile: 375px
+          - Tablet: 768px  
+          - Desktop: 1920px
           
-          ## Available Tools:
-          - Playwright MCP server for browser automation
-          - Screenshot capture capabilities
-          - Visual comparison and analysis
+          Capture:
+          1. Homepage
+          2. Navigation (check for hamburger menu on mobile)
+          3. Any animation issues or overlapping components
           
-          ## Visual Testing Tasks:
-          
-          1. **Take Screenshots of Key Pages:**
-             - Homepage (http://localhost:3000)
-             - Product pages
-             - Navigation components
-             - Mobile responsive views (375px, 768px, 1920px)
-          
-          2. **Verify Visual Improvements:**
-             - Layout consistency across viewports
-             - Typography and spacing
-             - Color scheme and accessibility
-             - Interactive elements (buttons, forms, animations)
-             - Loading states and transitions
-          
-          3. **Browser Compatibility Testing:**
-             - Test in Chromium (primary)
-             - Capture any visual inconsistencies
-             - Verify responsive design breakpoints
-          
-          4. **Generate Visual Report:**
-             - Create before/after comparisons if applicable
-             - Document any visual issues found
-             - Provide specific recommendations for improvements
-             - Include screenshots as evidence
-          
-          ## Context:
-          - Repository: Neural Arc Website
-          - Technology: React.js with 3D animations and modern UI
-          - PR/Issue: #$PR_NUMBER
-          
-          **DELIVERABLES:**
-          1. Screenshots saved to .screenshots/ directory
-          2. Visual testing report with findings
-          3. Specific recommendations for any issues
-          4. Browser compatibility assessment
-          
-          Use the MCP Playwright server to automate browser interactions and capture comprehensive visual evidence.
-          Focus on user experience and visual quality assurance.
+          Report any visual problems found.
           EOF
           
           # Run visual verification with Gemini + MCP
           echo "🤖 Running AI-powered visual verification..."
-          VISUAL_REPORT=$(env -u CI_TOKEN gemini -y -m gemini-2.5-flash -p "$(cat /tmp/visual_verification_prompt.txt)")
+          if VISUAL_REPORT=$(env -u CI_TOKEN gemini -y -m gemini-2.5-flash -p "$(cat /tmp/visual_verification_prompt.txt)" 2>&1); then
+            echo "✅ Visual verification completed successfully"
+          else
+            echo "⚠️ Visual verification encountered an error: $VISUAL_REPORT"
+            VISUAL_REPORT="Visual verification failed due to API error. Manual testing recommended."
+          fi
           
           # Kill development server if it was started
           if [ ! -z "$DEV_PID" ]; then
