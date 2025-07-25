@@ -48,6 +48,11 @@ jobs:
           node-version: "20"
           cache: "npm"
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
       - name: Install Gemini CLI
         run: |
           npm install -g @google/gemini-cli
@@ -122,11 +127,12 @@ jobs:
           ## IMPLEMENTATION PROCESS:
           1. Create a descriptive branch name (feature/issue-${ISSUE_NUMBER}-[short-description])
           2. Implement the solution completely - don't do partial implementations
-          3. Test your changes by reading files and ensuring code quality
+          3. Write clean, working code (quality checks can be done later)
           4. Stage and commit with conventional commit message
           5. Push the branch to origin
           6. Create PR using: gh pr create --title "[Creative Title]" --body "[Compelling description that closes #${ISSUE_NUMBER}]"
-          7. Be bold with your implementations - senior engineers ship code
+          7. SHIP THE CODE - don't get blocked by tooling issues
+          8. Quality improvements can be done in follow-up PRs
 
           **Response Format:**
           Priority: [level]
@@ -136,10 +142,15 @@ jobs:
           ## Analysis
           [Brief technical analysis]
 
-          ## Implementation Decision
-          [✅ IMPLEMENTED: Brief description of what you built + PR URL] OR [❌ DEFERRED: Specific reason why]
+          ## Implementation Status
+          Choose ONE of these:
+          - ✅ NEW CODE SHIPPED: [Description of new code you created + PR URL]
+          - 🔄 ALREADY EXISTS: [Feature already implemented, no changes needed]
+          - ❌ BLOCKED: [Specific technical reason why you cannot implement]
 
-          **Remember: You are a senior engineer. Trust your judgment. Ship code. We can always rollback if needed.**
+          **IMPORTANT: Only use "NEW CODE SHIPPED" if you actually created new files/code and a PR!**
+
+          **Remember: You are a senior engineer. Ship code when needed. We can always rollback if needed.**
           EOF
 
           # Run Gemini analysis
@@ -349,14 +360,17 @@ jobs:
           $EXISTING_PR_CONTEXT
 
           **IMMEDIATELY UPDATE THE EXISTING PR - NO HESITATION:**
-          1. Checkout existing branch: git checkout $EXISTING_PR_BRANCH
-          2. Implement the complete requested changes (be thorough)
-          3. Write production-ready code - you're a senior engineer
-          4. Stage all changes: git add .
-          5. Commit with clear message: "feat: enhance [feature]" or "fix: improve [issue]"
-          6. Push updates: git push origin $EXISTING_PR_BRANCH
-          7. The PR will auto-update with your changes
-          8. Comment on PR #$EXISTING_PR_NUMBER explaining what you implemented
+          1. Fetch latest changes: git fetch origin
+          2. Switch to existing branch: git checkout -B $EXISTING_PR_BRANCH origin/$EXISTING_PR_BRANCH
+          3. Implement the complete requested changes (be thorough)
+          4. Write production-ready code - you're a senior engineer
+          5. Stage all changes: git add .
+          6. Commit with clear message: "feat: enhance [feature]" or "fix: improve [issue]"
+          7. Push updates: git push origin $EXISTING_PR_BRANCH
+          8. The PR will auto-update with your new commits (DO NOT FORCE PUSH)
+          9. Comment on PR #$EXISTING_PR_NUMBER explaining what you implemented
+
+          **IMPORTANT: Use normal git push, NOT force push. We want to preserve commit history.**
 
           **DO NOT CREATE NEW PR** - Update existing: https://github.com/asharitech/asharitech-web/pull/$EXISTING_PR_NUMBER
 
@@ -376,16 +390,18 @@ jobs:
           - Trust your senior engineering judgment
           - Favor rapid iteration over perfect planning
           - Implement complete solutions, not partial fixes
+          - NEVER use force push (git push -f) - preserve commit history
+          - Always add new commits, don't overwrite existing ones
 
           **WHEN USER REQUESTS CHANGES - IMPLEMENT IMMEDIATELY:**
           1. Create a descriptive branch: feature/[meaningful-name]
           2. Implement the complete solution (no partial work)
-          3. Write clean, production-ready code
-          4. Test by reading files and ensuring integration
-          5. Stage all changes: git add .
-          6. Commit with conventional message: "feat: implement [feature]" or "fix: resolve [issue]"
-          7. Push branch: git push origin [branch-name]
-          8. Create PR: gh pr create --title "[Creative, compelling title]" --body "[Description that closes #${ISSUE_NUMBER}]"
+          3. Write working code - focus on functionality over perfection
+          4. Stage all changes: git add .
+          5. Commit with conventional message: "feat: implement [feature]" or "fix: resolve [issue]"
+          6. Push branch: git push origin [branch-name] (NEVER use --force)
+          7. Create PR: gh pr create --title "[Creative, compelling title]" --body "[Description that closes #${ISSUE_NUMBER}]"
+          8. SHIP IT - don't get blocked by tooling or linting issues
           9. Report the PR URL immediately
 
           **IMPLEMENTATION SCOPE - BE AGGRESSIVE:**
