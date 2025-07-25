@@ -74,42 +74,72 @@ jobs:
         run: |
           echo "🔍 Analyzing issue #$ISSUE_NUMBER for automated triage..."
 
+          # Get all issue comments for full context
+          ISSUE_COMMENTS=$(gh issue view $ISSUE_NUMBER --json comments --jq '.comments[] | "\(.author.login) (\(.createdAt)): \(.body)"' | head -20)
+
           # Create a comprehensive prompt for issue analysis
           cat > /tmp/issue_analysis_prompt.txt << EOF
-          You are a senior software engineer responsible for triaging GitHub issues. 
+          You are a confident senior full-stack engineer with complete autonomy and decision-making authority.
 
-          Analyze this issue and provide:
-          1. **Priority Level**: urgent, high, medium, low
-          2. **Category Labels**: bug, enhancement, feature-request, documentation, question, invalid
-          3. **Component Labels**: frontend, backend, infrastructure, ci-cd, security
-          4. **Difficulty Level**: beginner, intermediate, advanced
-          5. **Auto-Implementation**: If this is a simple task (beginner level, documentation, small change), implement it immediately
+          **CORE PRINCIPLES:**
+          - Make decisions autonomously - you are the technical owner
+          - Implement changes immediately when beneficial 
+          - Don't ask for permission - take action based on engineering judgment
+          - We're in a git repository - breaking changes are recoverable
+          - Favor action over analysis paralysis
+          - You have senior-level engineering common sense
 
-          Issue Title: "$ISSUE_TITLE"
-          Issue Body: "$ISSUE_BODY"
+          **YOUR MISSION:** Analyze this issue and IMPLEMENT SOLUTIONS IMMEDIATELY when appropriate.
 
-          You have full access to this repository. For simple issues (like documentation updates, small fixes, configuration changes):
-          1. Create a new branch with a descriptive name
-          2. Make the necessary changes
-          3. Stage and commit with a clear, conventional commit message
-          4. Push the branch to origin
-          5. Create PR using: gh pr create --title "[Creative Title]" --body "[Description that closes #${ISSUE_NUMBER}]"
+          ## Issue Context
 
-          Be creative with PR titles and write compelling descriptions that explain the value of your changes.
+          **Issue Title**: "$ISSUE_TITLE"
 
-          Respond in this exact format:
+          **Issue Description**: 
+          $ISSUE_BODY
+
+          **Comments and Discussion**:
+          $ISSUE_COMMENTS
+
+          ## IMPLEMENTATION CRITERIA (Be Aggressive!)
+
+          **IMPLEMENT IMMEDIATELY** for any of these:
+          - Documentation updates or additions
+          - Small bug fixes or improvements
+          - Configuration changes
+          - UI component additions or modifications
+          - Style improvements or responsive fixes
+          - New features that are clearly defined
+          - Code refactoring or optimization
+          - Dependency updates
+          - Build process improvements
+
+          **ONLY SKIP** if:
+          - Requires external API keys or services you don't have access to
+          - Needs business stakeholder decisions (pricing, legal, etc.)
+          - Requires breaking changes to public APIs used by external systems
+
+          ## IMPLEMENTATION PROCESS:
+          1. Create a descriptive branch name (feature/issue-${ISSUE_NUMBER}-[short-description])
+          2. Implement the solution completely - don't do partial implementations
+          3. Test your changes by reading files and ensuring code quality
+          4. Stage and commit with conventional commit message
+          5. Push the branch to origin
+          6. Create PR using: gh pr create --title "[Creative Title]" --body "[Compelling description that closes #${ISSUE_NUMBER}]"
+          7. Be bold with your implementations - senior engineers ship code
+
+          **Response Format:**
           Priority: [level]
           Labels: [comma-separated list]
           Difficulty: [level]
 
           ## Analysis
-          [Your detailed analysis]
+          [Brief technical analysis]
 
-          ## Suggested Actions
-          [Specific next steps]
+          ## Implementation Decision
+          [✅ IMPLEMENTED: Brief description of what you built + PR URL] OR [❌ DEFERRED: Specific reason why]
 
-          ## Auto-Implementation
-          [If implemented: "✅ Implemented and created PR: [URL]" | If not: "❌ Requires manual review"]
+          **Remember: You are a senior engineer. Trust your judgment. Ship code. We can always rollback if needed.**
           EOF
 
           # Run Gemini analysis
@@ -160,10 +190,14 @@ jobs:
         run: |
           echo "🔍 Analyzing pull request #$PR_NUMBER..."
 
-          # Get PR details
+          # Get PR details with full context
           PR_DETAILS=$(gh pr view $PR_NUMBER --json title,body,files,additions,deletions,commits)
           PR_TITLE=$(echo "$PR_DETAILS" | jq -r '.title')
           PR_BODY=$(echo "$PR_DETAILS" | jq -r '.body // ""')
+
+          # Get all PR comments and reviews for full context
+          PR_COMMENTS=$(gh pr view $PR_NUMBER --json comments --jq '.comments[] | "\(.author.login) (\(.createdAt)): \(.body)"' | head -20)
+          PR_REVIEWS=$(gh pr view $PR_NUMBER --json reviews --jq '.reviews[] | "\(.author.login) (\(.submittedAt)) - \(.state): \(.body // "No comment")"' | head -10)
 
           # Get changed files
           CHANGED_FILES=$(gh pr diff $PR_NUMBER --name-only)
@@ -180,13 +214,21 @@ jobs:
           5. **Testing Requirements**: What tests should be added/updated
           6. **Specific Feedback**: Line-by-line suggestions for improvement
 
-          PR Title: "$PR_TITLE"
-          PR Description: "$PR_BODY"
+          ## PR Details
+          **PR Title**: "$PR_TITLE"
+          **PR Description**: "$PR_BODY"
 
-          Changed Files:
+          **Changed Files**:
           $CHANGED_FILES
 
-          User Comment: "$COMMENT_BODY"
+          ## Full Conversation Context
+          **PR Comments**:
+          $PR_COMMENTS
+
+          **PR Reviews**:
+          $PR_REVIEWS
+
+          **Current User Comment**: "$COMMENT_BODY"
 
           Provide constructive, actionable feedback focusing on:
           - Code quality and best practices
@@ -195,6 +237,7 @@ jobs:
           - Maintainability
           - Testing coverage
 
+          Consider the full conversation history when providing your review. Reference previous comments and reviews when relevant.
           Be specific and helpful. If the code looks good, say so!
           EOF
 
@@ -252,45 +295,115 @@ jobs:
 
           echo "Command: $COMMAND"
 
-          # Get context (issue or PR details)
+          # Get context (issue or PR details with full conversation)
           if [ "${{ github.event.issue.pull_request }}" != "null" ] && [ "${{ github.event.issue.pull_request }}" != "" ]; then
             # This is a PR
             CONTEXT=$(gh pr view $ISSUE_NUMBER --json title,body,files,state)
             CONTEXT_TYPE="pull request"
+            # Get PR comments for full context
+            COMMENTS=$(gh pr view $ISSUE_NUMBER --json comments --jq '.comments[] | "\(.author.login) (\(.createdAt)): \(.body)"' | head -20)
+            EXISTING_PR_NUMBER=$ISSUE_NUMBER
           else
-            # This is an issue
+            # This is an issue - check if it has an associated PR
             CONTEXT=$(gh issue view $ISSUE_NUMBER --json title,body,state,labels)
             CONTEXT_TYPE="issue"
+            # Get issue comments for full context
+            COMMENTS=$(gh issue view $ISSUE_NUMBER --json comments --jq '.comments[] | "\(.author.login) (\(.createdAt)): \(.body)"' | head -20)
+            
+            # Check for existing PR that closes this issue
+            EXISTING_PR_NUMBER=$(gh pr list --search "closes #$ISSUE_NUMBER" --json number --jq '.[0].number // empty' 2>/dev/null || echo "")
+            
+            if [ ! -z "$EXISTING_PR_NUMBER" ]; then
+              echo "📋 Found existing PR #$EXISTING_PR_NUMBER that addresses issue #$ISSUE_NUMBER"
+              # Get existing PR details for context
+              EXISTING_PR_CONTEXT=$(gh pr view $EXISTING_PR_NUMBER --json title,body,headRefName,state)
+              EXISTING_PR_BRANCH=$(echo "$EXISTING_PR_CONTEXT" | jq -r '.headRefName')
+              echo "🌟 Will update existing PR branch: $EXISTING_PR_BRANCH"
+            fi
           fi
 
-          # Create context-aware prompt
+          # Create context-aware prompt with existing PR information
           cat > /tmp/custom_command_prompt.txt << EOF
           You are a helpful AI assistant working on a GitHub repository with full access to modify files and create pull requests.
 
           Context: You are responding to a comment on $CONTEXT_TYPE #$ISSUE_NUMBER
 
-          $CONTEXT_TYPE Details:
+          ## $CONTEXT_TYPE Details:
           $CONTEXT
 
-          User Request: "$COMMAND"
+          ## Full Conversation History:
+          $COMMENTS
 
-          You have full access to this GitHub repository and can autonomously:
-          - Read and modify any files in the repository
-          - Create new files and directories
-          - Commit changes to new branches
-          - Create pull requests using the gh CLI
-          - Run git commands for version control
+          ## Current User Request: 
+          "$COMMAND"
+          EOF
 
-          When the user asks you to create/update files or create a PR, you MUST:
-          1. Create a new branch with a meaningful name
-          2. Make the requested file changes
-          3. Stage changes: git add .
-          4. Commit with a conventional, descriptive message
-          5. Push the branch to origin
-          6. Create PR using: gh pr create --title "[Your Creative Title]" --body "[Compelling description that references #${ISSUE_NUMBER}]"
-          7. Provide the actual PR URL from gh CLI output in your response
+          # Add existing PR instructions if applicable
+          if [ ! -z "$EXISTING_PR_NUMBER" ] && [ "$CONTEXT_TYPE" = "issue" ]; then
+            cat >> /tmp/custom_command_prompt.txt << EOF
 
-          Be creative and write engaging PR titles and descriptions that clearly communicate the value of your changes.
+          ## 🚨 IMPORTANT: Existing PR Found
+          There is already an existing PR #$EXISTING_PR_NUMBER that addresses this issue.
+
+          **EXISTING PR DETAILS:**
+          $EXISTING_PR_CONTEXT
+
+          **IMMEDIATELY UPDATE THE EXISTING PR - NO HESITATION:**
+          1. Checkout existing branch: git checkout $EXISTING_PR_BRANCH
+          2. Implement the complete requested changes (be thorough)
+          3. Write production-ready code - you're a senior engineer
+          4. Stage all changes: git add .
+          5. Commit with clear message: "feat: enhance [feature]" or "fix: improve [issue]"
+          6. Push updates: git push origin $EXISTING_PR_BRANCH
+          7. The PR will auto-update with your changes
+          8. Comment on PR #$EXISTING_PR_NUMBER explaining what you implemented
+
+          **DO NOT CREATE NEW PR** - Update existing: https://github.com/asharitech/asharitech-web/pull/$EXISTING_PR_NUMBER
+
+          **SHIP THE CODE NOW - We can iterate and improve later if needed.**
+          EOF
+          else
+            cat >> /tmp/custom_command_prompt.txt << EOF
+
+          ## AUTONOMOUS ENGINEERING MODE - SHIP CODE NOW
+
+          **YOU ARE A SENIOR FULL-STACK ENGINEER WITH COMPLETE AUTONOMY**
+
+          **CORE ENGINEERING PRINCIPLES:**
+          - Make decisions immediately based on technical merit
+          - Ship working code - don't overthink or ask permission
+          - We're in git - breaking changes are recoverable via rollback
+          - Trust your senior engineering judgment
+          - Favor rapid iteration over perfect planning
+          - Implement complete solutions, not partial fixes
+
+          **WHEN USER REQUESTS CHANGES - IMPLEMENT IMMEDIATELY:**
+          1. Create a descriptive branch: feature/[meaningful-name]
+          2. Implement the complete solution (no partial work)
+          3. Write clean, production-ready code
+          4. Test by reading files and ensuring integration
+          5. Stage all changes: git add .
+          6. Commit with conventional message: "feat: implement [feature]" or "fix: resolve [issue]"
+          7. Push branch: git push origin [branch-name]
+          8. Create PR: gh pr create --title "[Creative, compelling title]" --body "[Description that closes #${ISSUE_NUMBER}]"
+          9. Report the PR URL immediately
+
+          **IMPLEMENTATION SCOPE - BE AGGRESSIVE:**
+          - UI components and styling changes
+          - New features and functionality
+          - Bug fixes and improvements
+          - Documentation updates
+          - Configuration changes
+          - Code refactoring and optimization
+          - Dependency management
+          - Build and deployment improvements
+
+          **DON'T ASK - JUST DO IT. Senior engineers ship code and iterate quickly.**
+          EOF
+          fi
+
+          # Add common instructions
+          cat >> /tmp/custom_command_prompt.txt << EOF
 
           If gh CLI fails, capture the exact error message and include it in your response.
 
@@ -313,13 +426,34 @@ jobs:
           *Generated by Gemini CLI in response to your request.*
           EOF
 
+          # Post comment to appropriate location
           if [ "${{ github.event.issue.pull_request }}" != "null" ] && [ "${{ github.event.issue.pull_request }}" != "" ]; then
+            # Direct PR comment
             gh pr comment $ISSUE_NUMBER --body-file /tmp/response_comment.md
+            echo "✅ Custom command processed for PR #$ISSUE_NUMBER"
           else
+            # Issue comment - but also comment on existing PR if one exists
             gh issue comment $ISSUE_NUMBER --body-file /tmp/response_comment.md
-          fi
+            echo "✅ Custom command processed for issue #$ISSUE_NUMBER"
+            
+            # If there's an existing PR, also post the response there for visibility
+            if [ ! -z "$EXISTING_PR_NUMBER" ]; then
+              cat > /tmp/pr_update_comment.md << EOF
+          ## 🔄 Issue Update from #$ISSUE_NUMBER
 
-          echo "✅ Custom command processed for #$ISSUE_NUMBER"
+          A follow-up comment was made on issue #$ISSUE_NUMBER:
+
+          > **@gemini Command**: $COMMAND
+
+          $RESPONSE
+
+          ---
+          *This update was automatically posted from issue #$ISSUE_NUMBER*
+          EOF
+              gh pr comment $EXISTING_PR_NUMBER --body-file /tmp/pr_update_comment.md
+              echo "📋 Also posted update to existing PR #$EXISTING_PR_NUMBER"
+            fi
+          fi
 
       - name: Cleanup
         if: always()
