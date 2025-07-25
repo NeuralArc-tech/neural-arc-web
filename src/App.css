@@ -71,6 +71,7 @@ body {
     height: 100%;
     padding: 0 var(--spacing-sm);
     justify-content: space-between; /* Distribute items */
+    flex-wrap: wrap; /* Allow items to wrap on smaller screens */
 }
 
 .header-logo {
@@ -83,7 +84,7 @@ body {
 
 .main-nav {
     display: flex;
-    gap: var(--spacing-sm);
+    gap: 30px; /* Adjusted for better spacing on larger screens */
     margin-left: auto;
     margin-right: auto;
     align-items: center; /* Align items vertically in nav */
@@ -215,7 +216,7 @@ body {
 }
 
 .main-logo {
-    width: 1000px;
+    width: 80vw; /* Start with responsive width */
     height: auto;
     opacity: 1;
     position: relative;
@@ -223,7 +224,7 @@ body {
 }
 
 .logo-glow {
-    width: 1000px;
+    width: 80vw; /* Start with responsive width */
     height: auto;
     opacity: 0.6;
     position: absolute;
@@ -311,13 +312,13 @@ body {
     bottom: var(--spacing-md);
     left: var(--spacing-md);
     font-family: var(--font-family);
-    font-size: 18px;
+    font-size: clamp(16px, 2.5vw, 18px); /* Responsive font size */
     font-weight: 300;
     color: var(--primary-white);
     z-index: 150;
     opacity: var(--text-light);
     line-height: 1.4;
-    max-width: 400px;
+    max-width: 90%; /* Use percentage for max-width */
     pointer-events: none;
 }
 
@@ -1209,12 +1210,15 @@ body {
     .main-nav.open {
         display: flex; /* Show mobile nav */
         transform: translateY(0); /* Slide in */
+        height: calc(100vh - var(--header-height)); /* Take full available height */
+        overflow-y: auto; /* Enable scrolling for many items */
     }
 
     .nav-item {
-        padding: 10px 0;
+        padding: 15px 0; /* Increased padding for better touch targets */
         width: 100%;
         text-align: center;
+        font-size: 18px; /* Slightly larger font for readability */
     }
 
     .nav-item::after {

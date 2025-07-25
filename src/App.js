@@ -194,13 +194,19 @@ function App() {
       <header className="main-header">
         <div className="header-content">
           <img src="/logo/logo-web.png" alt="Neural Arc Logo" className="header-logo" />
-          <nav className="main-nav">
-            <a href="#" className="nav-item">COMPANY</a>
-            <a href="#" className="nav-item" onClick={handleProductsClick}>PRODUCTS</a>
-            <a href="#" className="nav-item" onClick={handleBackToMain}>HOME</a>
-            <a href="#" className="nav-item">FAQ</a>
+          <div className="hamburger-menu" onClick={toggleMobileMenu}>
+            <div className={`bar ${isMobileMenuOpen ? 'open' : ''}`}></div>
+            <div className={`bar ${isMobileMenuOpen ? 'open' : ''}`}></div>
+            <div className={`bar ${isMobileMenuOpen ? 'open' : ''}`}></div>
+          </div>
+          <nav className={`main-nav ${isMobileMenuOpen ? 'open' : ''}`}>
+            <a href="#" className="nav-item" onClick={() => { handleBackToMain(); toggleMobileMenu(); }}>HOME</a>
+            <a href="#" className="nav-item" onClick={() => { handleProductsClick(); toggleMobileMenu(); }}>PRODUCTS</a>
+            <a href="#" className="nav-item" onClick={toggleMobileMenu}>COMPANY</a>
+            <a href="#" className="nav-item" onClick={toggleMobileMenu}>FAQ</a>
+            <a href="#" className="glass-button mobile-only" onClick={toggleMobileMenu}>Contact Us</a>
           </nav>
-          <a href="#" className="glass-button">Contact Us</a>
+          <a href="#" className="glass-button desktop-only">Contact Us</a>
         </div>
       </header>
 
