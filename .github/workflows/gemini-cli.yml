@@ -53,10 +53,18 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Install Gemini CLI
+      - name: Install Playwright
+        run: |
+          npm install -g playwright
+          npx playwright install chromium --with-deps
+          echo "Playwright installed successfully"
+
+      - name: Install Gemini CLI and MCP Servers
         run: |
           npm install -g @google/gemini-cli
-          echo "Gemini CLI installed successfully"
+          npm install -g @playwright/mcp@latest
+          npm install -g @sethbang/mcp-screenshot-server
+          echo "Gemini CLI and MCP servers installed successfully"
           gemini --version
 
       - name: Configure Gemini CLI
@@ -132,7 +140,8 @@ jobs:
           5. Push the branch to origin
           6. Create PR using: gh pr create --title "[Creative Title]" --body "[Compelling description that closes #${ISSUE_NUMBER}]"
           7. SHIP THE CODE - don't get blocked by tooling issues
-          8. Quality improvements can be done in follow-up PRs
+          8. **VISUAL VERIFICATION**: For UI changes, use "@gemini visual" to trigger automated browser testing
+          9. Quality improvements can be done in follow-up PRs
 
           **Response Format:**
           Priority: [level]
@@ -471,11 +480,148 @@ jobs:
             fi
           fi
 
+      - name: Visual Verification and Browser Testing
+        if: |
+          (github.event_name == 'pull_request' && github.event.action == 'opened') ||
+          (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@gemini') && contains(github.event.comment.body, 'visual')) ||
+          (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@gemini') && contains(github.event.comment.body, 'visual'))
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+        run: |
+          echo "🎨 Starting visual verification and browser testing..."
+          
+          # Create screenshots directory
+          mkdir -p .screenshots/before .screenshots/after
+          
+          # Start development server in background (if package.json exists)
+          if [ -f "package.json" ]; then
+            echo "📦 Starting development server..."
+            
+            # Install dependencies
+            if command -v bun >/dev/null 2>&1; then
+              bun install
+              timeout 30s bun run dev &
+            else
+              npm install
+              timeout 30s npm run dev &
+            fi
+            
+            DEV_PID=$!
+            sleep 10  # Wait for server to start
+            
+            echo "🌐 Development server started (PID: $DEV_PID)"
+          fi
+          
+          # Configure MCP browser automation prompt
+          cat > /tmp/visual_verification_prompt.txt << EOF
+          You are a senior QA engineer with expertise in visual testing and browser automation.
+          
+          **MISSION:** Perform comprehensive visual verification of web improvements using MCP browser automation.
+          
+          ## Available Tools:
+          - Playwright MCP server for browser automation
+          - Screenshot capture capabilities
+          - Visual comparison and analysis
+          
+          ## Visual Testing Tasks:
+          
+          1. **Take Screenshots of Key Pages:**
+             - Homepage (http://localhost:3000)
+             - Product pages
+             - Navigation components
+             - Mobile responsive views (375px, 768px, 1920px)
+          
+          2. **Verify Visual Improvements:**
+             - Layout consistency across viewports
+             - Typography and spacing
+             - Color scheme and accessibility
+             - Interactive elements (buttons, forms, animations)
+             - Loading states and transitions
+          
+          3. **Browser Compatibility Testing:**
+             - Test in Chromium (primary)
+             - Capture any visual inconsistencies
+             - Verify responsive design breakpoints
+          
+          4. **Generate Visual Report:**
+             - Create before/after comparisons if applicable
+             - Document any visual issues found
+             - Provide specific recommendations for improvements
+             - Include screenshots as evidence
+          
+          ## Context:
+          - Repository: Neural Arc Website
+          - Technology: React.js with 3D animations and modern UI
+          - PR/Issue: #$PR_NUMBER
+          
+          **DELIVERABLES:**
+          1. Screenshots saved to .screenshots/ directory
+          2. Visual testing report with findings
+          3. Specific recommendations for any issues
+          4. Browser compatibility assessment
+          
+          Use the MCP Playwright server to automate browser interactions and capture comprehensive visual evidence.
+          Focus on user experience and visual quality assurance.
+          EOF
+          
+          # Run visual verification with Gemini + MCP
+          echo "🤖 Running AI-powered visual verification..."
+          VISUAL_REPORT=$(env -u CI_TOKEN gemini -y -m gemini-2.5-flash -p "$(cat /tmp/visual_verification_prompt.txt)")
+          
+          # Kill development server if it was started
+          if [ ! -z "$DEV_PID" ]; then
+            kill $DEV_PID 2>/dev/null || true
+            echo "🔴 Development server stopped"
+          fi
+          
+          # Create visual verification report
+          cat > /tmp/visual_report.md << EOF
+          ## 🎨 Visual Verification Report
+          
+          **Automated by Gemini CLI with MCP Browser Automation**
+          
+          ### Test Environment
+          - Browser: Chromium (Playwright)
+          - Viewports: Mobile (375px), Tablet (768px), Desktop (1920px)
+          - Local Server: http://localhost:3000
+          
+          ### Visual Analysis Results
+          $VISUAL_REPORT
+          
+          ### Screenshots
+          Screenshots have been captured and saved to the repository's .screenshots directory.
+          
+          ---
+          *Generated by Gemini CLI with MCP Playwright integration for PR/Issue #$PR_NUMBER*
+          EOF
+          
+          # Post visual report as comment
+          if [ "${{ github.event.issue.pull_request }}" != "null" ] && [ "${{ github.event.issue.pull_request }}" != "" ]; then
+            gh pr comment $PR_NUMBER --body-file /tmp/visual_report.md
+            echo "✅ Visual verification report posted to PR #$PR_NUMBER"
+          else
+            gh issue comment $PR_NUMBER --body-file /tmp/visual_report.md
+            echo "✅ Visual verification report posted to issue #$PR_NUMBER"
+          fi
+          
+          # Commit screenshots if any were created
+          if [ -n "$(find .screenshots -type f -name '*.png' 2>/dev/null)" ]; then
+            git add .screenshots/
+            git commit -m "📸 Add visual verification screenshots for #$PR_NUMBER" || true
+            git push origin HEAD || true
+            echo "📸 Screenshots committed to repository"
+          fi
+          
+          echo "🎨 Visual verification completed"
+
       - name: Cleanup
         if: always()
         run: |
           rm -f /tmp/*.txt /tmp/*.md
-          echo "🧹 Cleanup completed"
+          # Preserve screenshots directory for visual verification
+          echo "🧹 Cleanup completed (screenshots preserved)"
 
       - name: Report Status
         if: always()
