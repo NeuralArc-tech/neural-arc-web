@@ -11,10 +11,16 @@ import TextScrubDetail from './pages/TextScrubDetail';
 import TableScrubDetail from './pages/TableScrubDetail';
 import TimeSeriesDetail from './pages/TimeSeriesDetail';
 import StreamScrubDetail from './pages/StreamScrubDetail';
+import Header from './Header';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('main');
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+
+  const toggleMobileNav = () => {
+    setIsMobileNavOpen((prev) => !prev);
+  };
 
   const handleLearnMoreClick = () => {
     setIsTransitioning(true);
@@ -25,6 +31,7 @@ function App() {
   };
 
   const handleBackToMain = () => {
+    setIsMobileNavOpen(false);
     setIsTransitioning(true);
     setTimeout(() => {
       setCurrentPage('main');
@@ -34,6 +41,7 @@ function App() {
 
   const handleProductsClick = (e) => {
     e.preventDefault();
+    setIsMobileNavOpen(false);
     setIsTransitioning(true);
     setTimeout(() => {
       setCurrentPage('product-details');
@@ -49,21 +57,16 @@ function App() {
     }, 300);
   };
 
+
   if (currentPage === 'text-scrub') {
     return (
       <div className={`App page-transition ${isTransitioning ? 'fade-out' : 'fade-in'}`}>
-        <header className="main-header">
-          <div className="header-content">
-            <img src="/logo/logo-web.png" alt="Neural Arc Logo" className="header-logo" />
-            <nav className="main-nav">
-              <a href="#" className="nav-item">COMPANY</a>
-              <a href="#" className="nav-item" onClick={handleProductsClick}>PRODUCTS</a>
-              <a href="#" className="nav-item" onClick={handleBackToMain}>HOME</a>
-              <a href="#" className="nav-item">FAQ</a>
-            </nav>
-            <a href="#" className="glass-button">Contact Us</a>
-          </div>
-        </header>
+        <Header
+          toggleMobileNav={toggleMobileNav}
+          isMobileNavOpen={isMobileNavOpen}
+          onProducts={handleProductsClick}
+          onHome={handleBackToMain}
+        />
         <TextScrubDetail onBack={handleBackToMain} />
       </div>
     );
@@ -72,18 +75,12 @@ function App() {
   if (currentPage === 'table-scrub') {
     return (
       <div className={`App page-transition ${isTransitioning ? 'fade-out' : 'fade-in'}`}>
-        <header className="main-header">
-          <div className="header-content">
-            <img src="/logo/logo-web.png" alt="Neural Arc Logo" className="header-logo" />
-            <nav className="main-nav">
-              <a href="#" className="nav-item">COMPANY</a>
-              <a href="#" className="nav-item" onClick={handleProductsClick}>PRODUCTS</a>
-              <a href="#" className="nav-item" onClick={handleBackToMain}>HOME</a>
-              <a href="#" className="nav-item">FAQ</a>
-            </nav>
-            <a href="#" className="glass-button">Contact Us</a>
-          </div>
-        </header>
+        <Header
+          toggleMobileNav={toggleMobileNav}
+          isMobileNavOpen={isMobileNavOpen}
+          onProducts={handleProductsClick}
+          onHome={handleBackToMain}
+        />
         <TableScrubDetail onBack={handleBackToMain} />
       </div>
     );
@@ -92,18 +89,12 @@ function App() {
   if (currentPage === 'timeseries-scrub') {
     return (
       <div className={`App page-transition ${isTransitioning ? 'fade-out' : 'fade-in'}`}>
-        <header className="main-header">
-          <div className="header-content">
-            <img src="/logo/logo-web.png" alt="Neural Arc Logo" className="header-logo" />
-            <nav className="main-nav">
-              <a href="#" className="nav-item">COMPANY</a>
-              <a href="#" className="nav-item" onClick={handleProductsClick}>PRODUCTS</a>
-              <a href="#" className="nav-item" onClick={handleBackToMain}>HOME</a>
-              <a href="#" className="nav-item">FAQ</a>
-            </nav>
-            <a href="#" className="glass-button">Contact Us</a>
-          </div>
-        </header>
+        <Header
+          toggleMobileNav={toggleMobileNav}
+          isMobileNavOpen={isMobileNavOpen}
+          onProducts={handleProductsClick}
+          onHome={handleBackToMain}
+        />
         <TimeSeriesDetail onBack={handleBackToMain} />
       </div>
     );
@@ -112,18 +103,12 @@ function App() {
   if (currentPage === 'stream-scrub') {
     return (
       <div className={`App page-transition ${isTransitioning ? 'fade-out' : 'fade-in'}`}>
-        <header className="main-header">
-          <div className="header-content">
-            <img src="/logo/logo-web.png" alt="Neural Arc Logo" className="header-logo" />
-            <nav className="main-nav">
-              <a href="#" className="nav-item">COMPANY</a>
-              <a href="#" className="nav-item" onClick={handleProductsClick}>PRODUCTS</a>
-              <a href="#" className="nav-item" onClick={handleBackToMain}>HOME</a>
-              <a href="#" className="nav-item">FAQ</a>
-            </nav>
-            <a href="#" className="glass-button">Contact Us</a>
-          </div>
-        </header>
+        <Header
+          toggleMobileNav={toggleMobileNav}
+          isMobileNavOpen={isMobileNavOpen}
+          onProducts={handleProductsClick}
+          onHome={handleBackToMain}
+        />
         <StreamScrubDetail onBack={handleBackToMain} />
       </div>
     );
@@ -132,18 +117,12 @@ function App() {
   if (currentPage === 'product-details') {
     return (
       <div className={`App page-transition ${isTransitioning ? 'fade-out' : 'fade-in'}`}>
-        <header className="main-header">
-          <div className="header-content">
-            <img src="/logo/logo-web.png" alt="Neural Arc Logo" className="header-logo" />
-            <nav className="main-nav">
-              <a href="#" className="nav-item">COMPANY</a>
-              <a href="#" className="nav-item" onClick={handleProductsClick}>PRODUCTS</a>
-              <a href="#" className="nav-item" onClick={handleBackToMain}>HOME</a>
-              <a href="#" className="nav-item">FAQ</a>
-            </nav>
-            <a href="#" className="glass-button">Contact Us</a>
-          </div>
-        </header>
+        <Header
+          toggleMobileNav={toggleMobileNav}
+          isMobileNavOpen={isMobileNavOpen}
+          onProducts={handleProductsClick}
+          onHome={handleBackToMain}
+        />
         <ProductDetails onBack={handleBackToMain} onScrubClick={handleScrubClick} />
       </div>
     );
@@ -151,18 +130,12 @@ function App() {
 
   return (
     <div className={`App page-transition ${isTransitioning ? 'fade-out' : 'fade-in'}`}>
-      <header className="main-header">
-        <div className="header-content">
-          <img src="/logo/logo-web.png" alt="Neural Arc Logo" className="header-logo" />
-          <nav className="main-nav">
-            <a href="#" className="nav-item">COMPANY</a>
-            <a href="#" className="nav-item" onClick={handleProductsClick}>PRODUCTS</a>
-            <a href="#" className="nav-item" onClick={handleBackToMain}>HOME</a>
-            <a href="#" className="nav-item">FAQ</a>
-          </nav>
-          <a href="#" className="glass-button">Contact Us</a>
-        </div>
-      </header>
+      <Header
+        toggleMobileNav={toggleMobileNav}
+        isMobileNavOpen={isMobileNavOpen}
+        onProducts={handleProductsClick}
+        onHome={handleBackToMain}
+      />
 
       <div className="canvas-container">
         <ParticleCanvas />
