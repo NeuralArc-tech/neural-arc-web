@@ -1,0 +1,39 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"],
+      "env": {
+        "PLAYWRIGHT_BROWSERS_PATH": "/tmp/playwright-browsers"
+      },
+      "timeout": 60000,
+      "trust": false
+    },
+    "screenshot": {
+      "command": "npx",
+      "args": ["-y", "@sethbang/mcp-screenshot-server"],
+      "timeout": 30000,
+      "trust": false
+    }
+  },
+  "browserAutomation": {
+    "enabled": true,
+    "defaultBrowser": "chromium",
+    "headless": true,
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "screenshotOptions": {
+      "format": "png",
+      "quality": 90,
+      "fullPage": true
+    }
+  },
+  "visualTesting": {
+    "enabled": true,
+    "baseUrl": "http://localhost:3000",
+    "screenshotDirectory": ".screenshots",
+    "comparisonThreshold": 0.1
+  }
+}
