@@ -1138,6 +1138,22 @@ body {
 }
 
 /* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 1200px) {
+    .header-content {
+        padding: 0 var(--spacing-xs); /* Reduce padding earlier */
+    }
+
+    .main-nav {
+        gap: 20px; /* Slightly reduce gap */
+    }
+
+    .glass-button {
+        padding: 10px 20px;
+        font-size: 14px;
+        margin-right: var(--spacing-xs);
+    }
+}
+
 @media (max-width: 1024px) {
     .header-logo {
         margin-left: var(--spacing-xs);
@@ -1145,12 +1161,6 @@ body {
 
     .main-nav {
         gap: var(--spacing-xs);
-    }
-
-    .glass-button {
-        padding: 10px 20px;
-        font-size: 14px;
-        margin-right: var(--spacing-xs);
     }
 
     .main-logo,
@@ -1173,12 +1183,13 @@ body {
     }
 
     .metallic-object-container {
-        width: 400px;
-        height: 400px;
+        width: clamp(300px, 40vw, 400px); /* Responsive width */
+        height: auto; /* Maintain aspect ratio */
     }
 
     .metallic-object {
-        max-width: 400px;
+        max-width: 100%; /* Ensure it scales within its container */
+        height: auto;
     }
 }
 
@@ -1219,6 +1230,7 @@ body {
         width: 100%;
         text-align: center;
         font-size: 18px; /* Slightly larger font for readability */
+        white-space: normal; /* Allow text to wrap */
     }
 
     .nav-item::after {
@@ -1232,6 +1244,7 @@ body {
     .glass-button.mobile-only {
         display: block;
         margin: 20px auto;
+        white-space: normal; /* Allow text to wrap */
     }
 
     .hamburger-menu {
@@ -1240,14 +1253,14 @@ body {
 
     .main-logo,
     .logo-glow {
-        width: 80vw;
+        width: 90vw; /* Adjusted for better scaling on smaller screens */
     }
     
     .tagline {
-        font-size: 16px;
-        max-width: 300px;
-        left: var(--spacing-xs);
-        bottom: var(--spacing-xs);
+        font-size: clamp(14px, 4vw, 16px); /* More aggressive clamp for smaller screens */
+        max-width: 80%; /* Use percentage for max-width */
+        left: 5%; /* Use percentage for positioning */
+        bottom: 5%; /* Use percentage for positioning */
     }
     
     .transition-text {
@@ -1279,17 +1292,18 @@ body {
     }
     
     .metallic-object-container {
-        width: 300px;
-        height: 300px;
+        width: clamp(200px, 50vw, 300px); /* More aggressive clamp for smaller screens */
+        height: auto;
     }
     
     .metallic-object {
-        max-width: 300px;
+        max-width: 100%;
+        height: auto;
     }
 
     .scroll-indicator {
-        right: var(--spacing-xs);
-        bottom: var(--spacing-xs);
+        right: 5%; /* Use percentage for positioning */
+        bottom: 5%; /* Use percentage for positioning */
     }
 }
 
@@ -1314,11 +1328,12 @@ body {
     }
 
     .metallic-object-container {
-        width: 250px;
-        height: 250px;
+        width: clamp(150px, 60vw, 250px); /* Even more aggressive clamp */
+        height: auto;
     }
 
     .metallic-object {
-        max-width: 250px;
+        max-width: 100%;
+        height: auto;
     }
 }
