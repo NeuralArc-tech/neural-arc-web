@@ -2,7 +2,7 @@ import React from 'react';
 import './ProductDetails.css';
 import PixelTransition from './PixelTransition';
 
-function ProductDetails({ onBack }) {
+function ProductDetails({ onBack, onScrubClick }) {
   return (
     <div className="product-details-page">
       <div className="product-header">
@@ -16,7 +16,7 @@ function ProductDetails({ onBack }) {
           <img src="/assets/Cubes.png" alt="" className="decorative-cubes" />
           <img src="/assets/Pipe.png" alt="" className="decorative-pipe" />
           
-          <div className="scrub-item">
+          <div className="scrub-item" onClick={() => onScrubClick('text-scrub')}>
             <PixelTransition
               firstContent={
                 <img src="/assets/textscrub.png" alt="Text Scrub" className="scrub-icon" />
@@ -32,7 +32,7 @@ function ProductDetails({ onBack }) {
             />
             <span className="scrub-label">Text Scrub</span>
           </div>
-          <div className="scrub-item">
+          <div className="scrub-item" onClick={() => onScrubClick('table-scrub')}>
             <PixelTransition
               firstContent={
                 <img src="/assets/tablescrub.png" alt="Table Scrub" className="scrub-icon" />
@@ -48,7 +48,7 @@ function ProductDetails({ onBack }) {
             />
             <span className="scrub-label">Table Scrub</span>
           </div>
-          <div className="scrub-item">
+          <div className="scrub-item" onClick={() => onScrubClick('timeseries-scrub')}>
             <PixelTransition
               firstContent={
                 <img src="/assets/timeseriesscrub.png" alt="Timeseries Scrub" className="scrub-icon" />
@@ -64,7 +64,7 @@ function ProductDetails({ onBack }) {
             />
             <span className="scrub-label">Timeseries Scrub</span>
           </div>
-          <div className="scrub-item">
+          <div className="scrub-item" onClick={() => onScrubClick('stream-scrub')}>
             <PixelTransition
               firstContent={
                 <img src="/assets/streamscrub.png" alt="Stream Scrub" className="scrub-icon" />

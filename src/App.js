@@ -7,6 +7,10 @@ import FadeOutOverlay from './FadeOutOverlay';
 import Orb from './Orb';
 import ProductParticleFlow from './ProductParticleFlow';
 import ProductDetails from './ProductDetails';
+import TextScrubDetail from './pages/TextScrubDetail';
+import TableScrubDetail from './pages/TableScrubDetail';
+import TimeSeriesDetail from './pages/TimeSeriesDetail';
+import StreamScrubDetail from './pages/StreamScrubDetail';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('main');
@@ -37,6 +41,94 @@ function App() {
     }, 300);
   };
 
+  const handleScrubClick = (scrubType) => {
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentPage(scrubType);
+      setIsTransitioning(false);
+    }, 300);
+  };
+
+  if (currentPage === 'text-scrub') {
+    return (
+      <div className={`App page-transition ${isTransitioning ? 'fade-out' : 'fade-in'}`}>
+        <header className="main-header">
+          <div className="header-content">
+            <img src="/logo/logo-web.png" alt="Neural Arc Logo" className="header-logo" />
+            <nav className="main-nav">
+              <a href="#" className="nav-item">COMPANY</a>
+              <a href="#" className="nav-item" onClick={handleProductsClick}>PRODUCTS</a>
+              <a href="#" className="nav-item" onClick={handleBackToMain}>HOME</a>
+              <a href="#" className="nav-item">FAQ</a>
+            </nav>
+            <a href="#" className="glass-button">Contact Us</a>
+          </div>
+        </header>
+        <TextScrubDetail onBack={handleBackToMain} />
+      </div>
+    );
+  }
+
+  if (currentPage === 'table-scrub') {
+    return (
+      <div className={`App page-transition ${isTransitioning ? 'fade-out' : 'fade-in'}`}>
+        <header className="main-header">
+          <div className="header-content">
+            <img src="/logo/logo-web.png" alt="Neural Arc Logo" className="header-logo" />
+            <nav className="main-nav">
+              <a href="#" className="nav-item">COMPANY</a>
+              <a href="#" className="nav-item" onClick={handleProductsClick}>PRODUCTS</a>
+              <a href="#" className="nav-item" onClick={handleBackToMain}>HOME</a>
+              <a href="#" className="nav-item">FAQ</a>
+            </nav>
+            <a href="#" className="glass-button">Contact Us</a>
+          </div>
+        </header>
+        <TableScrubDetail onBack={handleBackToMain} />
+      </div>
+    );
+  }
+
+  if (currentPage === 'timeseries-scrub') {
+    return (
+      <div className={`App page-transition ${isTransitioning ? 'fade-out' : 'fade-in'}`}>
+        <header className="main-header">
+          <div className="header-content">
+            <img src="/logo/logo-web.png" alt="Neural Arc Logo" className="header-logo" />
+            <nav className="main-nav">
+              <a href="#" className="nav-item">COMPANY</a>
+              <a href="#" className="nav-item" onClick={handleProductsClick}>PRODUCTS</a>
+              <a href="#" className="nav-item" onClick={handleBackToMain}>HOME</a>
+              <a href="#" className="nav-item">FAQ</a>
+            </nav>
+            <a href="#" className="glass-button">Contact Us</a>
+          </div>
+        </header>
+        <TimeSeriesDetail onBack={handleBackToMain} />
+      </div>
+    );
+  }
+
+  if (currentPage === 'stream-scrub') {
+    return (
+      <div className={`App page-transition ${isTransitioning ? 'fade-out' : 'fade-in'}`}>
+        <header className="main-header">
+          <div className="header-content">
+            <img src="/logo/logo-web.png" alt="Neural Arc Logo" className="header-logo" />
+            <nav className="main-nav">
+              <a href="#" className="nav-item">COMPANY</a>
+              <a href="#" className="nav-item" onClick={handleProductsClick}>PRODUCTS</a>
+              <a href="#" className="nav-item" onClick={handleBackToMain}>HOME</a>
+              <a href="#" className="nav-item">FAQ</a>
+            </nav>
+            <a href="#" className="glass-button">Contact Us</a>
+          </div>
+        </header>
+        <StreamScrubDetail onBack={handleBackToMain} />
+      </div>
+    );
+  }
+
   if (currentPage === 'product-details') {
     return (
       <div className={`App page-transition ${isTransitioning ? 'fade-out' : 'fade-in'}`}>
@@ -52,7 +144,7 @@ function App() {
             <a href="#" className="glass-button">Contact Us</a>
           </div>
         </header>
-        <ProductDetails onBack={handleBackToMain} />
+        <ProductDetails onBack={handleBackToMain} onScrubClick={handleScrubClick} />
       </div>
     );
   }
