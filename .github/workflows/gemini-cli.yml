@@ -63,7 +63,7 @@ jobs:
         run: |
           npm install -g @google/gemini-cli
           npm install -g @playwright/mcp@latest
-          npm install -g @sethbang/mcp-screenshot-server
+          # Note: Screenshot functionality is handled by Playwright MCP
           echo "Gemini CLI and MCP servers installed successfully"
           gemini --version
 

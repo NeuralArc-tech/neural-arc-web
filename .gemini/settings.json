@@ -8,12 +8,6 @@
       },
       "timeout": 60000,
       "trust": false
-    },
-    "screenshot": {
-      "command": "npx",
-      "args": ["-y", "@sethbang/mcp-screenshot-server"],
-      "timeout": 30000,
-      "trust": false
     }
   },
   "browserAutomation": {
