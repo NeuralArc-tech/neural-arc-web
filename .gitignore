@@ -137,4 +137,4 @@ SSH_SETUP_GUIDE.md
 
 # Visual testing (screenshots are committed but temp files are ignored)
 .screenshots/temp/
-.playwright-browsers/
+.playwright-browsers/.gemini-api
