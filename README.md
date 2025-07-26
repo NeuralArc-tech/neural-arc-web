@@ -6,6 +6,8 @@
 
 The official website for Neural Arc - an interactive, modern single-page application built with React featuring immersive 3D animations and particle effects. This repository showcases not only our brand identity but also serves as a demonstration of cutting-edge AI-powered development practices with automated visual testing and intelligent issue resolution.
 
+> ⚠️ **Development Status**: This website is currently under active development. Features and content are being continuously improved and expanded. The AI-powered development infrastructure is fully operational for testing and development purposes.
+
 ## 🤖 AI-Powered Development Features
 
 This repository demonstrates advanced AI integration for modern development workflows:
