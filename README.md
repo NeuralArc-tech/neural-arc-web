@@ -259,6 +259,27 @@ This repository serves as a demonstration of AI-powered development practices. F
 - **Review documentation** in `docs/VISUAL_TESTING.md`
 - **Check configuration** in `GEMINI.md` for available commands
 
+## 👨‍💻 Credits & Development
+
+This project represents a collaboration between human creativity and AI innovation:
+
+### **Project Leadership**
+**[Zaky Ashari](https://github.com/zakysyauqi)** - *Founder & CEO, Neural Arc*
+- Project architecture and vision
+- AI integration strategy and implementation
+- Frontend development and 3D animations
+- Development workflow optimization
+
+### **AI Collaboration Partners**
+- **[Claude Code](https://claude.ai/code)** - Advanced code generation, visual testing integration, and documentation
+- **[Gemini CLI](https://ai.google.dev/gemini-api)** - Intelligent issue triage, automated code review, and visual analysis
+- **[GPT Codex](https://openai.com/codex)** - Code assistance and development acceleration
+
+### **Technology Integration**
+This project demonstrates the powerful synergy between human engineering leadership and AI-powered development tools, showcasing how modern web development can leverage artificial intelligence for enhanced productivity, quality assurance, and innovative user experiences.
+
+> *"The future of software development lies in the seamless collaboration between human creativity and artificial intelligence."* - Zaky Ashari
+
 ## Copyright
 
 © 2025 Neural Arc. All rights reserved.
