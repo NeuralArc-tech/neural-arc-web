@@ -274,7 +274,7 @@ This project represents a collaboration between human creativity and AI innovati
 
 ### **AI Collaboration Partners**
 - **[Claude Code](https://claude.ai/code)** - Advanced code generation, visual testing integration, and documentation
-- **[Gemini CLI](https://ai.google.dev/gemini-api)** - Intelligent issue triage, automated code review, and visual analysis
+- **[Gemini CLI](https://github.com/google-gemini/gemini-cli)** - Intelligent issue triage, automated code review, and visual analysis
 - **[GPT Codex](https://openai.com/codex)** - Code assistance and development acceleration
 
 ### **Technology Integration**
