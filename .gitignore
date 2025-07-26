@@ -127,6 +127,10 @@ private-key*
 .api-keys
 token.txt
 *.token
+*api-key*
+*api_key*
+.apikey
+.api_key
 
 # Project-specific directories
 .references/
@@ -137,4 +141,39 @@ SSH_SETUP_GUIDE.md
 
 # Visual testing (screenshots are committed but temp files are ignored)
 .screenshots/temp/
-.playwright-browsers/.gemini-api
+.playwright-browsers/
+
+# Browser-Use and MCP artifacts
+browser-recordings/
+browser-artifacts/
+visual-test-results/
+
+# Deployment and cloud provider configs (may contain secrets)
+wrangler.toml
+vercel.json
+netlify.toml
+firebase.json
+firebase-adminsdk-*.json
+.firebase/
+.vercel/
+.netlify/
+
+# Claude Desktop and MCP configs (may contain local API keys)
+claude_desktop_config.json
+~/.claude/
+.claude/
+
+# Docker environment files
+docker-compose.override.yml
+docker-compose.local.yml
+.dockerenv
+
+# Additional security patterns
+*.backup
+*.bak
+*_backup
+*_bak
+.secrets.*
+secrets.*
+.private.*
+private.*

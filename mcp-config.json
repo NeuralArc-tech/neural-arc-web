@@ -1,0 +1,42 @@
+{
+  "mcpServers": {
+    "browser-use": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "browser-use-mcp-server"
+      ],
+      "env": {
+        "BROWSER_USE_HEADLESS": "false",
+        "BROWSER_USE_SAVE_VIDEOS": "true",
+        "BROWSER_USE_VIDEO_DIR": "./browser-recordings",
+        "BROWSER_USE_SAVE_ARTIFACTS": "true",
+        "BROWSER_USE_ARTIFACTS_DIR": "./browser-artifacts",
+        "GEMINI_API_KEY": "${GEMINI_API_KEY}"
+      }
+    },
+    "playwright-mcp": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp",
+        "start"
+      ],
+      "env": {
+        "BROWSER_HEADLESS": "true",
+        "BROWSER_SLOWMO": "100"
+      }
+    },
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "."
+      ]
+    }
+  }
+}

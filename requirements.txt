@@ -1,0 +1,11 @@
+# Browser automation and visual testing dependencies
+browser-use>=0.1.0
+playwright>=1.40.0
+opencv-python-headless>=4.8.0
+numpy>=1.24.0
+Pillow>=10.0.0
+asyncio>=3.4.3
+
+# Optional: For advanced visual analysis
+scikit-image>=0.22.0
+matplotlib>=3.7.0

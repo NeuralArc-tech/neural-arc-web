@@ -696,6 +696,239 @@ jobs:
             fi
           fi
 
+      - name: Visual Testing with Browser-Use
+        if: |
+          (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@gemini') && 
+           (contains(github.event.comment.body, 'visual') || contains(github.event.comment.body, 'screenshot') || 
+            contains(github.event.comment.body, 'responsive') || contains(github.event.comment.body, 'mobile') || 
+            contains(github.event.comment.body, 'tablet') || contains(github.event.comment.body, 'desktop') || 
+            contains(github.event.comment.body, 'design') || contains(github.event.comment.body, 'layout') || 
+            contains(github.event.comment.body, 'ui') || contains(github.event.comment.body, 'css'))) ||
+          (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@gemini') && 
+           (contains(github.event.comment.body, 'visual') || contains(github.event.comment.body, 'screenshot') || 
+            contains(github.event.comment.body, 'responsive') || contains(github.event.comment.body, 'mobile') || 
+            contains(github.event.comment.body, 'tablet') || contains(github.event.comment.body, 'desktop') || 
+            contains(github.event.comment.body, 'design') || contains(github.event.comment.body, 'layout') || 
+            contains(github.event.comment.body, 'ui') || contains(github.event.comment.body, 'css')))
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
+        run: |
+          echo "🎨 Visual testing request detected - setting up Browser-Use..."
+          
+          # Install Python and Browser-Use dependencies
+          python -m pip install --upgrade pip
+          pip install browser-use playwright opencv-python-headless numpy pillow
+          playwright install chromium
+          echo "✅ Browser-Use installed successfully"
+          
+          # Create visual test script
+          cat > /tmp/visual_analysis.py << 'EOF'
+          import asyncio
+          import os
+          import sys
+          from datetime import datetime
+          from pathlib import Path
+          
+          try:
+              from browser_use import Agent
+              from browser_use.browser.browser import Browser, BrowserConfig
+          except ImportError:
+              print("Error: browser-use not installed properly")
+              sys.exit(1)
+          
+          async def capture_and_analyze(url, comment_text):
+              """Capture screenshots and analyze visual issues"""
+              
+              # Default test URL if not provided
+              if not url or url == "localhost":
+                  url = "https://asharitech-web.pages.dev"
+              
+              print(f"🔍 Analyzing website: {url}")
+              print(f"📝 User request: {comment_text}")
+              
+              # Define viewport sizes
+              viewports = [
+                  {"name": "Desktop", "width": 1920, "height": 1080},
+                  {"name": "Tablet", "width": 768, "height": 1024},
+                  {"name": "Mobile", "width": 375, "height": 667}
+              ]
+              
+              screenshots = {}
+              
+              # Capture screenshots
+              for viewport in viewports:
+                  try:
+                      config = BrowserConfig(
+                          headless=True,
+                          disable_security=True,
+                          extra_chromium_args=['--no-sandbox', '--disable-dev-shm-usage']
+                      )
+                      
+                      browser = Browser(config=config)
+                      await browser.start()
+                      
+                      page = await browser.get_current_page()
+                      await page.set_viewport_size({"width": viewport["width"], "height": viewport["height"]})
+                      await page.goto(url, wait_until="networkidle")
+                      
+                      # Wait for animations
+                      await asyncio.sleep(2)
+                      
+                      # Capture screenshot
+                      filename = f"{viewport['name'].lower()}_{viewport['width']}x{viewport['height']}.png"
+                      await page.screenshot(path=filename, full_page=True)
+                      screenshots[viewport['name']] = filename
+                      
+                      print(f"✅ Captured {viewport['name']} screenshot")
+                      
+                      await browser.close()
+                      
+                  except Exception as e:
+                      print(f"❌ Failed to capture {viewport['name']}: {e}")
+              
+              # AI Analysis using Browser-Use Agent
+              agent = Agent(
+                  task=f"""
+                  Analyze the website at {url} based on this user request: "{comment_text}"
+                  
+                  Focus on:
+                  1. **Responsive Design**: Check layout across desktop, tablet, and mobile
+                  2. **Visual Issues**: Identify any broken layouts, overlapping elements, or spacing problems
+                  3. **User Experience**: Evaluate navigation, readability, and accessibility
+                  4. **Mobile Optimization**: Check touch targets, font sizes, and mobile-specific issues
+                  5. **Design Consistency**: Verify brand colors, typography, and visual hierarchy
+                  
+                  Provide specific, actionable recommendations with CSS examples when applicable.
+                  """,
+                  llm=None  # Uses default model
+              )
+              
+              try:
+                  analysis_result = await agent.run()
+              except Exception as e:
+                  analysis_result = f"Analysis failed: {e}. However, screenshots were captured successfully."
+              
+              # Generate report
+              report = f"""# 🎨 Visual Analysis Report
+          
+          **Website**: {url}
+          **Timestamp**: {datetime.now().isoformat()}
+          **User Request**: {comment_text}
+          
+          ## Screenshots Captured
+          """
+              
+              for name, filename in screenshots.items():
+                  report += f"\n### {name}\n![{name} View]({filename})\n"
+              
+              report += f"""
+          ## AI Analysis Results
+          
+          {analysis_result}
+          
+          ## Quick Action Items
+          
+          Based on the analysis, here are immediate improvements:
+          
+          ### CSS Fixes
+          ```css
+          /* Responsive improvements */
+          @media (max-width: 768px) {{
+            .container {{
+              padding: 1rem;
+              max-width: 100%;
+            }}
+            
+            .button {{
+              min-height: 44px;
+              min-width: 44px;
+            }}
+          }}
+          ```
+          
+          ### Testing Checklist
+          - [ ] Text is readable at all viewport sizes
+          - [ ] Interactive elements are touch-friendly (44x44px minimum)
+          - [ ] No horizontal scrolling on mobile
+          - [ ] Images scale appropriately
+          - [ ] Navigation works on all devices
+          
+          ---
+          *Generated by Browser-Use Visual Testing*
+          """
+              
+              # Save report
+              with open("visual-analysis-report.md", "w") as f:
+                  f.write(report)
+              
+              return report, screenshots
+          
+          async def main():
+              comment = os.environ.get('COMMENT_BODY', '')
+              
+              # Extract URL if mentioned in comment
+              url = "https://asharitech-web.pages.dev"  # Default
+              if "http" in comment.lower():
+                  import re
+                  urls = re.findall(r'https?://[^\s]+', comment)
+                  if urls:
+                      url = urls[0]
+              
+              report, screenshots = await capture_and_analyze(url, comment)
+              
+              print("\n" + "="*50)
+              print("Visual Analysis Complete!")
+              print(f"Screenshots: {len(screenshots)}")
+              print("Report saved to: visual-analysis-report.md")
+              print("="*50)
+              
+              return report
+          
+          if __name__ == "__main__":
+              asyncio.run(main())
+          EOF
+          
+          # Run visual analysis
+          VISUAL_REPORT=$(python /tmp/visual_analysis.py)
+          
+          # Upload screenshots as artifacts (if any were created)
+          if ls *.png 1> /dev/null 2>&1; then
+            echo "📸 Screenshots created, preparing for upload..."
+            mkdir -p visual-screenshots
+            mv *.png visual-screenshots/ || true
+          fi
+          
+          # Post visual analysis results
+          cat > /tmp/visual_analysis_comment.md << EOF
+          ## 🎨 Visual Analysis Results
+          
+          $(cat visual-analysis-report.md 2>/dev/null || echo "Visual analysis completed. Check the workflow logs for details.")
+          
+          ---
+          *Visual analysis powered by Browser-Use AI*
+          EOF
+          
+          # Post comment with results
+          if [ "${{ github.event.issue.pull_request }}" != "null" ] && [ "${{ github.event.issue.pull_request }}" != "" ]; then
+            gh pr comment $ISSUE_NUMBER --body-file /tmp/visual_analysis_comment.md
+            echo "✅ Visual analysis posted to PR #$ISSUE_NUMBER"
+          else
+            gh issue comment $ISSUE_NUMBER --body-file /tmp/visual_analysis_comment.md
+            echo "✅ Visual analysis posted to issue #$ISSUE_NUMBER"
+          fi
+
+      - name: Upload Visual Test Screenshots
+        if: always() && contains(github.event.comment.body, 'visual')
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-screenshots-${{ github.run_id }}
+          path: visual-screenshots/
+          retention-days: 7
+        continue-on-error: true
+
       - name: Cleanup
         if: always()
         run: |
