@@ -266,7 +266,7 @@ This repository serves as a demonstration of AI-powered development practices. F
 This project represents a collaboration between human creativity and AI innovation:
 
 ### **Project Leadership**
-**[Zaky Ashari](https://github.com/zakysyauqi)** - *Founder & CEO, Neural Arc*
+**[Zaky Ashari](https://github.com/zashari)**
 - Project architecture and vision
 - AI integration strategy and implementation
 - Frontend development and 3D animations
