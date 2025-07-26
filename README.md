@@ -280,7 +280,7 @@ This project represents a collaboration between human creativity and AI innovati
 ### **Technology Integration**
 This project demonstrates the powerful synergy between human engineering leadership and AI-powered development tools, showcasing how modern web development can leverage artificial intelligence for enhanced productivity, quality assurance, and innovative user experiences.
 
-> *"The future of software development lies in the seamless collaboration between human creativity and artificial intelligence."* - Zaky Ashari
+> *"The future of software development lies in the seamless collaboration between human creativity and artificial intelligence."* - Claude Code
 
 ## Copyright
 
