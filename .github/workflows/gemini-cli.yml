@@ -53,18 +53,15 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Install Playwright
+      - name: Install project dependencies
         run: |
-          npm install -g playwright
-          npx playwright install chromium --with-deps
-          echo "Playwright installed successfully"
+          bun install
+          echo "Project dependencies installed successfully"
 
-      - name: Install Gemini CLI and MCP Servers
+      - name: Install Gemini CLI
         run: |
           npm install -g @google/gemini-cli
-          npm install -g @playwright/mcp@latest
-          # Note: Screenshot functionality is handled by Playwright MCP
-          echo "Gemini CLI and MCP servers installed successfully"
+          echo "Gemini CLI installed successfully"
           gemini --version
 
       - name: Configure Gemini CLI
@@ -75,6 +72,22 @@ jobs:
           # Configure git for commits
           git config --global user.name "Gemini CLI Bot"
           git config --global user.email "gemini-cli@github-actions.noreply.com"
+
+          # Verify environment setup
+          echo "🔧 Environment Setup:"
+          echo "- Node version: $(node --version)"
+          echo "- Bun version: $(bun --version)"
+          echo "- NPM version: $(npm --version)"
+          echo "- Git version: $(git --version)"
+          echo "- GitHub CLI version: $(gh --version | head -1)"
+          echo "- Current directory: $(pwd)"
+          echo "- Repository: ${{ github.repository }}"
+
+          # Verify project commands work
+          echo ""
+          echo "📦 Available Project Commands:"
+          bun run --help 2>/dev/null | grep -E "dev|build|lint|test|type-check" || echo "Project scripts from package.json:"
+          cat package.json | jq -r '.scripts' 2>/dev/null || echo "No scripts found"
 
       - name: Issue Triage
         if: github.event_name == 'issues' && github.event.action == 'opened'
@@ -90,9 +103,38 @@ jobs:
           # Get all issue comments for full context
           ISSUE_COMMENTS=$(gh issue view $ISSUE_NUMBER --json comments --jq '.comments[] | "\(.author.login) (\(.createdAt)): \(.body)"' | head -20)
 
+          # Extract attachment URLs from issue body
+          ISSUE_ATTACHMENTS=$(echo "$ISSUE_BODY" | grep -oE 'https://[a-zA-Z0-9./_-]+\.(png|jpg|jpeg|gif|pdf|zip|txt|md|json|svg|mp4|mov|csv)' || echo "")
+          ISSUE_USER_CONTENT=$(echo "$ISSUE_BODY" | grep -oE 'https://user-images\.githubusercontent\.com/[^)]+' || echo "")
+          ISSUE_GITHUB_UPLOADS=$(echo "$ISSUE_BODY" | grep -oE 'https://github\.com/[^/]+/[^/]+/files/[0-9]+/[^)]+' || echo "")
+
+          # Extract attachment URLs from all comments
+          COMMENT_ATTACHMENTS=$(gh issue view $ISSUE_NUMBER --json comments --jq '.comments[].body' | grep -oE 'https://[a-zA-Z0-9./_-]+\.(png|jpg|jpeg|gif|pdf|zip|txt|md|json|svg|mp4|mov|csv)' || echo "")
+          COMMENT_USER_CONTENT=$(gh issue view $ISSUE_NUMBER --json comments --jq '.comments[].body' | grep -oE 'https://user-images\.githubusercontent\.com/[^)]+' || echo "")
+          COMMENT_GITHUB_UPLOADS=$(gh issue view $ISSUE_NUMBER --json comments --jq '.comments[].body' | grep -oE 'https://github\.com/[^/]+/[^/]+/files/[0-9]+/[^)]+' || echo "")
+
+          # Combine all attachments
+          ALL_ATTACHMENTS=$(echo -e "$ISSUE_ATTACHMENTS\n$ISSUE_USER_CONTENT\n$ISSUE_GITHUB_UPLOADS\n$COMMENT_ATTACHMENTS\n$COMMENT_USER_CONTENT\n$COMMENT_GITHUB_UPLOADS" | grep -v '^$' | sort -u || echo "")
+
+          # Get repository file structure for context
+          REPO_STRUCTURE=$(find . -type f -name "*.json" -o -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.md" | grep -E "^\\./[^/]+\\.(json|md)$|^\\./src/" | head -30 | sort)
+
+          # Get key project files content
+          README_SNIPPET=$(head -20 README.md 2>/dev/null || echo "No README.md found")
+          GEMINI_CONFIG=$(head -50 GEMINI.md 2>/dev/null || echo "No GEMINI.md found")
+
           # Create a comprehensive prompt for issue analysis
           cat > /tmp/issue_analysis_prompt.txt << EOF
           You are a confident senior full-stack engineer with complete autonomy and decision-making authority.
+
+          **ENVIRONMENT & TOOLS AVAILABLE:**
+          - Node.js 20.x with npm
+          - Bun (latest) - primary package manager and runtime
+          - Git and GitHub CLI (gh) for version control
+          - Full file system access in repository: ${{ github.repository }}
+          - Project type: Next.js 15+ with TypeScript, Tailwind CSS, deployed on Cloudflare Workers
+          - All project dependencies are installed via 'bun install'
+          - Build commands: bun run dev, bun run build, bun run lint, bun run type-check
 
           **CORE PRINCIPLES:**
           - Make decisions autonomously - you are the technical owner
@@ -104,15 +146,41 @@ jobs:
 
           **YOUR MISSION:** Analyze this issue and IMPLEMENT SOLUTIONS IMMEDIATELY when appropriate.
 
+          ## Repository Structure
+          Key files and directories in this project:
+          $REPO_STRUCTURE
+
+          ## Project Configuration (GEMINI.md)
+          $GEMINI_CONFIG
+
           ## Issue Context
 
-          **Issue Title**: "$ISSUE_TITLE"
+          **Issue #$ISSUE_NUMBER Title**: "$ISSUE_TITLE"
+          **Issue URL**: https://github.com/${{ github.repository }}/issues/$ISSUE_NUMBER
+          **Created by**: ${{ github.event.issue.user.login }}
 
           **Issue Description**: 
           $ISSUE_BODY
 
-          **Comments and Discussion**:
+          **All Comments and Discussion**:
           $ISSUE_COMMENTS
+
+          **Issue Labels**: ${{ github.event.issue.labels }}
+
+          ## Attachments and Files
+          $(if [ ! -z "$ALL_ATTACHMENTS" ]; then
+            echo "**The following attachments were found in this issue/comments:**"
+            echo "$ALL_ATTACHMENTS" | while read -r url; do
+              [ ! -z "$url" ] && echo "- $url"
+            done
+            echo ""
+            echo "**IMPORTANT**: You can download and analyze these files using curl or wget commands."
+            echo "For images: Use curl to download and examine for design references or screenshots"
+            echo "For text files: Download and read the content to understand requirements"
+            echo "Example: curl -L -o attachment.png 'URL_HERE'"
+          else
+            echo "No attachments found in this issue."
+          fi)
 
           ## IMPLEMENTATION CRITERIA (Be Aggressive!)
 
@@ -140,8 +208,7 @@ jobs:
           5. Push the branch to origin
           6. Create PR using: gh pr create --title "[Creative Title]" --body "[Compelling description that closes #${ISSUE_NUMBER}]"
           7. SHIP THE CODE - don't get blocked by tooling issues
-          8. **VISUAL VERIFICATION**: For UI changes, use "@gemini visual" to trigger automated browser testing
-          9. Quality improvements can be done in follow-up PRs
+          8. Quality improvements can be done in follow-up PRs
 
           **Response Format:**
           Priority: [level]
@@ -222,9 +289,27 @@ jobs:
           # Get changed files
           CHANGED_FILES=$(gh pr diff $PR_NUMBER --name-only)
 
+          # Extract attachment URLs from PR body and comments
+          PR_ATTACHMENTS=$(echo "$PR_BODY" | grep -oE 'https://[a-zA-Z0-9./_-]+\.(png|jpg|jpeg|gif|pdf|zip|txt|md|json|svg|mp4|mov|csv)' || echo "")
+          PR_USER_CONTENT=$(echo "$PR_BODY" | grep -oE 'https://user-images\.githubusercontent\.com/[^)]+' || echo "")
+          PR_GITHUB_UPLOADS=$(echo "$PR_BODY" | grep -oE 'https://github\.com/[^/]+/[^/]+/files/[0-9]+/[^)]+' || echo "")
+
+          PR_COMMENT_ATTACHMENTS=$(gh pr view $PR_NUMBER --json comments --jq '.comments[].body' | grep -oE 'https://[a-zA-Z0-9./_-]+\.(png|jpg|jpeg|gif|pdf|zip|txt|md|json|svg|mp4|mov|csv)' || echo "")
+          PR_COMMENT_USER_CONTENT=$(gh pr view $PR_NUMBER --json comments --jq '.comments[].body' | grep -oE 'https://user-images\.githubusercontent\.com/[^)]+' || echo "")
+          PR_COMMENT_GITHUB_UPLOADS=$(gh pr view $PR_NUMBER --json comments --jq '.comments[].body' | grep -oE 'https://github\.com/[^/]+/[^/]+/files/[0-9]+/[^)]+' || echo "")
+
+          ALL_PR_ATTACHMENTS=$(echo -e "$PR_ATTACHMENTS\n$PR_USER_CONTENT\n$PR_GITHUB_UPLOADS\n$PR_COMMENT_ATTACHMENTS\n$PR_COMMENT_USER_CONTENT\n$PR_COMMENT_GITHUB_UPLOADS" | grep -v '^$' | sort -u || echo "")
+
           # Create comprehensive PR analysis prompt
           cat > /tmp/pr_analysis_prompt.txt << EOF
           You are a senior code reviewer for a full-stack web application workspace.
+
+          **ENVIRONMENT & PROJECT CONTEXT:**
+          - Repository: ${{ github.repository }}
+          - PR #$PR_NUMBER URL: https://github.com/${{ github.repository }}/pull/$PR_NUMBER
+          - Project: Next.js 15+ with TypeScript, Tailwind CSS, Cloudflare Workers deployment
+          - Available tools: Node.js, Bun, Git, GitHub CLI
+          - Can run: bun test, bun lint, bun type-check to verify changes
 
           Review this pull request and provide:
           1. **Code Quality Assessment**: Rate 1-5 and explain
@@ -235,7 +320,8 @@ jobs:
           6. **Specific Feedback**: Line-by-line suggestions for improvement
 
           ## PR Details
-          **PR Title**: "$PR_TITLE"
+          **PR #$PR_NUMBER Title**: "$PR_TITLE"
+          **Author**: ${{ github.event.pull_request.user.login || github.actor }}
           **PR Description**: "$PR_BODY"
 
           **Changed Files**:
@@ -249,6 +335,21 @@ jobs:
           $PR_REVIEWS
 
           **Current User Comment**: "$COMMENT_BODY"
+
+          ## Attachments and Files in PR
+          $(if [ ! -z "$ALL_PR_ATTACHMENTS" ]; then
+            echo "**The following attachments were found in this PR/comments:**"
+            echo "$ALL_PR_ATTACHMENTS" | while read -r url; do
+              [ ! -z "$url" ] && echo "- $url"
+            done
+            echo ""
+            echo "**You can download and analyze these files if relevant to the code review:**"
+            echo "- Images: May contain UI designs, screenshots, or visual bugs"
+            echo "- Files: May contain test data, configurations, or documentation"
+            echo "Use: curl -L -o filename 'URL' to download"
+          else
+            echo "No attachments found in this PR."
+          fi)
 
           Provide constructive, actionable feedback focusing on:
           - Code quality and best practices
@@ -315,6 +416,16 @@ jobs:
 
           echo "Command: $COMMAND"
 
+          # Get repository context for better understanding
+          REPO_FILES=$(find . -type f -name "*.json" -o -name "*.ts" -o -name "*.tsx" -o -name "*.md" | grep -E "^\\./[^/]+\\.(json|md)$|^\\./src/" | head -20 | sort)
+          PROJECT_INFO=$(cat package.json 2>/dev/null | jq -r '{name, version, description, scripts}' || echo "No package.json")
+          GEMINI_CONTEXT=$(cat GEMINI.md 2>/dev/null || echo "No GEMINI.md found")
+
+          # Extract attachment URLs from the current comment
+          CURRENT_ATTACHMENTS=$(echo "$COMMENT_BODY" | grep -oE 'https://[a-zA-Z0-9./_-]+\.(png|jpg|jpeg|gif|pdf|zip|txt|md|json|svg|mp4|mov|csv)' || echo "")
+          CURRENT_USER_CONTENT=$(echo "$COMMENT_BODY" | grep -oE 'https://user-images\.githubusercontent\.com/[^)]+' || echo "")
+          CURRENT_GITHUB_UPLOADS=$(echo "$COMMENT_BODY" | grep -oE 'https://github\.com/[^/]+/[^/]+/files/[0-9]+/[^)]+' || echo "")
+
           # Get context (issue or PR details with full conversation)
           if [ "${{ github.event.issue.pull_request }}" != "null" ] && [ "${{ github.event.issue.pull_request }}" != "" ]; then
             # This is a PR
@@ -336,17 +447,46 @@ jobs:
             if [ ! -z "$EXISTING_PR_NUMBER" ]; then
               echo "📋 Found existing PR #$EXISTING_PR_NUMBER that addresses issue #$ISSUE_NUMBER"
               # Get existing PR details for context
-              EXISTING_PR_CONTEXT=$(gh pr view $EXISTING_PR_NUMBER --json title,body,headRefName,state)
+              EXISTING_PR_CONTEXT=$(gh pr view $EXISTING_PR_NUMBER --json title,body,headRefName,state,mergedAt)
+              EXISTING_PR_STATE=$(echo "$EXISTING_PR_CONTEXT" | jq -r '.state')
               EXISTING_PR_BRANCH=$(echo "$EXISTING_PR_CONTEXT" | jq -r '.headRefName')
-              echo "🌟 Will update existing PR branch: $EXISTING_PR_BRANCH"
+              
+              if [ "$EXISTING_PR_STATE" = "MERGED" ]; then
+                echo "✅ PR #$EXISTING_PR_NUMBER was already merged - will create new PR for follow-up changes"
+                EXISTING_PR_MERGED=true
+              else
+                echo "🌟 Will update existing PR branch: $EXISTING_PR_BRANCH"
+                EXISTING_PR_MERGED=false
+              fi
+              
+              # Get PR file changes for context
+              EXISTING_PR_FILES=$(gh pr view $EXISTING_PR_NUMBER --json files --jq '.files[] | "\(.path): \(.additions)+ \(.deletions)-"')
+              
+              # Get PR comments for full context  
+              EXISTING_PR_COMMENTS=$(gh pr view $EXISTING_PR_NUMBER --json comments --jq '.comments[] | "\(.author.login) (\(.createdAt)): \(.body)"' | head -10)
             fi
           fi
 
           # Create context-aware prompt with existing PR information
           cat > /tmp/custom_command_prompt.txt << EOF
-          You are a helpful AI assistant working on a GitHub repository with full access to modify files and create pull requests.
+          You are a senior full-stack engineer working on a GitHub repository with full access to modify files and create pull requests.
+
+          **ENVIRONMENT & PROJECT CONTEXT:**
+          - Repository: ${{ github.repository }}
+          - Working Directory: $(pwd)
+          - Node.js, Bun, Git, and GitHub CLI are available
+          - Project: Next.js 15+ with TypeScript, Tailwind CSS
+          - All dependencies installed, can run: bun dev, bun build, bun test, bun lint
+          - Project files: README.md, GEMINI.md contain project documentation
 
           Context: You are responding to a comment on $CONTEXT_TYPE #$ISSUE_NUMBER
+
+          ## Project Information
+          **Repository Files**: 
+          $REPO_FILES
+
+          **Package Info**:
+          $PROJECT_INFO
 
           ## $CONTEXT_TYPE Details:
           $CONTEXT
@@ -356,10 +496,59 @@ jobs:
 
           ## Current User Request: 
           "$COMMAND"
+
+          ## Attachments in this Comment
+          $(if [ ! -z "$CURRENT_ATTACHMENTS$CURRENT_USER_CONTENT$CURRENT_GITHUB_UPLOADS" ]; then
+            echo "**Attachments found in this comment:**"
+            [ ! -z "$CURRENT_ATTACHMENTS" ] && echo "$CURRENT_ATTACHMENTS" | while read -r url; do
+              [ ! -z "$url" ] && echo "- $url"
+            done
+            [ ! -z "$CURRENT_USER_CONTENT" ] && echo "$CURRENT_USER_CONTENT" | while read -r url; do
+              [ ! -z "$url" ] && echo "- $url"
+            done
+            [ ! -z "$CURRENT_GITHUB_UPLOADS" ] && echo "$CURRENT_GITHUB_UPLOADS" | while read -r url; do
+              [ ! -z "$url" ] && echo "- $url"
+            done
+            echo ""
+            echo "**IMPORTANT**: You can download and analyze these files using curl or wget commands."
+            echo "For images: Use curl to download and examine for design references or screenshots"
+            echo "For text files: Download and read the content to understand requirements"
+            echo "Example: curl -L -o attachment.png 'URL_HERE'"
+          else
+            echo "No attachments found in this comment."
+          fi)
           EOF
 
           # Add existing PR instructions if applicable
           if [ ! -z "$EXISTING_PR_NUMBER" ] && [ "$CONTEXT_TYPE" = "issue" ]; then
+            if [ "$EXISTING_PR_MERGED" = "true" ]; then
+              cat >> /tmp/custom_command_prompt.txt << EOF
+
+          ## 🎉 PREVIOUS PR WAS MERGED - CREATE NEW PR FOR FOLLOW-UP
+          There was a previous PR #$EXISTING_PR_NUMBER that addressed this issue and was merged.
+
+          **PREVIOUS PR DETAILS:**
+          $EXISTING_PR_CONTEXT
+
+          **FILES THAT WERE CHANGED:**
+          $EXISTING_PR_FILES
+
+          **PREVIOUS PR COMMENTS:**
+          $EXISTING_PR_COMMENTS
+
+          **CREATE NEW PR FOR FOLLOW-UP CHANGES:**
+          1. You're already on main branch with the merged changes
+          2. Create a new branch: git checkout -b feature/issue-${ISSUE_NUMBER}-followup-[description]
+          3. Make the requested changes to the files (they now contain the merged content)
+          4. Stage changes: git add .
+          5. Commit with clear message: "docs: [describe your changes]"
+          6. Push the new branch: git push origin [branch-name]
+          7. Create NEW PR: gh pr create --title "[Creative Title]" --body "[Description that closes #${ISSUE_NUMBER}]"
+          8. Provide the PR URL in your response
+
+          **The files now contain the merged content from the previous PR - work with that as your starting point.**
+          EOF
+            else
             cat >> /tmp/custom_command_prompt.txt << EOF
 
           ## 🚨 IMPORTANT: Existing PR Found
@@ -368,23 +557,50 @@ jobs:
           **EXISTING PR DETAILS:**
           $EXISTING_PR_CONTEXT
 
-          **IMMEDIATELY UPDATE THE EXISTING PR - NO HESITATION:**
-          1. Fetch latest changes: git fetch origin
-          2. Switch to existing branch: git checkout -B $EXISTING_PR_BRANCH origin/$EXISTING_PR_BRANCH
-          3. Implement the complete requested changes (be thorough)
-          4. Write production-ready code - you're a senior engineer
-          5. Stage all changes: git add .
-          6. Commit with clear message: "feat: enhance [feature]" or "fix: improve [issue]"
-          7. Push updates: git push origin $EXISTING_PR_BRANCH
-          8. The PR will auto-update with your new commits (DO NOT FORCE PUSH)
-          9. Comment on PR #$EXISTING_PR_NUMBER explaining what you implemented
+          **FILES CHANGED IN EXISTING PR:**
+          $EXISTING_PR_FILES
 
-          **IMPORTANT: Use normal git push, NOT force push. We want to preserve commit history.**
+          **EXISTING PR COMMENTS:**
+          $EXISTING_PR_COMMENTS
+
+          **🚨 CRITICAL: EXECUTE GIT COMMANDS FIRST - DO NOT SKIP!**
+
+          YOU MUST EXECUTE THESE EXACT COMMANDS BEFORE DOING ANYTHING:
+
+          1. git fetch origin --all
+          2. git checkout -B $EXISTING_PR_BRANCH origin/$EXISTING_PR_BRANCH  
+          3. git branch --show-current
+
+          VERIFY: The output of step 3 must show "$EXISTING_PR_BRANCH"
+
+          4. head -10 README.md
+
+          VERIFY: This should show the PR version (with Table of Contents), NOT the main branch version
+
+          **IF YOU DON'T SEE THE TABLE OF CONTENTS SECTION, YOU'RE ON THE WRONG BRANCH!**
+
+          Expected content in PR branch README.md:
+          - Should start with "# Asharitech Web" 
+          - Should have "## Table of Contents" section around line 8-10
+          - Should have CI Build Status badges
+          - Should be much longer than main branch version
+
+          Only after successfully checking out $EXISTING_PR_BRANCH and verifying the content:
+          5. Make your requested changes to the files
+          6. git add .
+          7. git commit -m "docs: [describe your changes]"
+          8. git push origin $EXISTING_PR_BRANCH
+
+          **FAILURE PREVENTION:**
+          - Main branch README starts with "# Ashari Tech - Corporate Website"
+          - PR branch README starts with "# Asharitech Web" 
+          - If you see the wrong title, you're on main branch - STOP and fix checkout!
 
           **DO NOT CREATE NEW PR** - Update existing: https://github.com/asharitech/asharitech-web/pull/$EXISTING_PR_NUMBER
 
           **SHIP THE CODE NOW - We can iterate and improve later if needed.**
           EOF
+            fi
           else
             cat >> /tmp/custom_command_prompt.txt << EOF
 
@@ -480,128 +696,11 @@ jobs:
             fi
           fi
 
-      - name: Visual Verification and Browser Testing
-        if: |
-          (github.event_name == 'pull_request' && github.event.action == 'opened') ||
-          (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@gemini') && contains(github.event.comment.body, 'visual')) ||
-          (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@gemini') && contains(github.event.comment.body, 'visual'))
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
-        run: |
-          echo "🎨 Starting visual verification and browser testing..."
-          
-          # Create screenshots directory
-          mkdir -p .screenshots/before .screenshots/after
-          
-          # Start development server in background (if package.json exists)
-          if [ -f "package.json" ]; then
-            echo "📦 Starting development server..."
-            
-            # Install dependencies
-            if command -v bun >/dev/null 2>&1; then
-              bun install
-              timeout 300s bun run start &
-            else
-              npm install
-              timeout 300s npm run start &
-            fi
-            
-            DEV_PID=$!
-            
-            # Wait for server to be ready
-            echo "⏳ Waiting for development server to start..."
-            for i in {1..30}; do
-              if curl -s http://localhost:3000 > /dev/null; then
-                echo "✅ Development server is ready!"
-                break
-              fi
-              echo "Waiting... ($i/30)"
-              sleep 2
-            done
-            
-            echo "🌐 Development server started (PID: $DEV_PID)"
-          fi
-          
-          # Configure MCP browser automation prompt
-          cat > /tmp/visual_verification_prompt.txt << EOF
-          Take screenshots of the Neural Arc website at http://localhost:3000 using Playwright MCP.
-          
-          Test these viewports:
-          - Mobile: 375px
-          - Tablet: 768px  
-          - Desktop: 1920px
-          
-          Capture:
-          1. Homepage
-          2. Navigation (check for hamburger menu on mobile)
-          3. Any animation issues or overlapping components
-          
-          Report any visual problems found.
-          EOF
-          
-          # Run visual verification with Gemini + MCP
-          echo "🤖 Running AI-powered visual verification..."
-          if VISUAL_REPORT=$(env -u CI_TOKEN gemini -y -m gemini-2.5-flash -p "$(cat /tmp/visual_verification_prompt.txt)" 2>&1); then
-            echo "✅ Visual verification completed successfully"
-          else
-            echo "⚠️ Visual verification encountered an error: $VISUAL_REPORT"
-            VISUAL_REPORT="Visual verification failed due to API error. Manual testing recommended."
-          fi
-          
-          # Kill development server if it was started
-          if [ ! -z "$DEV_PID" ]; then
-            kill $DEV_PID 2>/dev/null || true
-            echo "🔴 Development server stopped"
-          fi
-          
-          # Create visual verification report
-          cat > /tmp/visual_report.md << EOF
-          ## 🎨 Visual Verification Report
-          
-          **Automated by Gemini CLI with MCP Browser Automation**
-          
-          ### Test Environment
-          - Browser: Chromium (Playwright)
-          - Viewports: Mobile (375px), Tablet (768px), Desktop (1920px)
-          - Local Server: http://localhost:3000
-          
-          ### Visual Analysis Results
-          $VISUAL_REPORT
-          
-          ### Screenshots
-          Screenshots have been captured and saved to the repository's .screenshots directory.
-          
-          ---
-          *Generated by Gemini CLI with MCP Playwright integration for PR/Issue #$PR_NUMBER*
-          EOF
-          
-          # Post visual report as comment
-          if [ "${{ github.event.issue.pull_request }}" != "null" ] && [ "${{ github.event.issue.pull_request }}" != "" ]; then
-            gh pr comment $PR_NUMBER --body-file /tmp/visual_report.md
-            echo "✅ Visual verification report posted to PR #$PR_NUMBER"
-          else
-            gh issue comment $PR_NUMBER --body-file /tmp/visual_report.md
-            echo "✅ Visual verification report posted to issue #$PR_NUMBER"
-          fi
-          
-          # Commit screenshots if any were created
-          if [ -n "$(find .screenshots -type f -name '*.png' 2>/dev/null)" ]; then
-            git add .screenshots/
-            git commit -m "📸 Add visual verification screenshots for #$PR_NUMBER" || true
-            git push origin HEAD || true
-            echo "📸 Screenshots committed to repository"
-          fi
-          
-          echo "🎨 Visual verification completed"
-
       - name: Cleanup
         if: always()
         run: |
           rm -f /tmp/*.txt /tmp/*.md
-          # Preserve screenshots directory for visual verification
-          echo "🧹 Cleanup completed (screenshots preserved)"
+          echo "🧹 Cleanup completed"
 
       - name: Report Status
         if: always()
