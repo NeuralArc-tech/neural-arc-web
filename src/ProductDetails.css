@@ -156,3 +156,36 @@
     align-items: center;
     justify-content: center;
 }
+
+/* Responsive adjustments for ProductDetails */
+@media (max-width: 768px) {
+    .product-details-page {
+        padding-top: 60px; /* Adjust padding for mobile */
+    }
+
+    .product-header {
+        padding-top: 15%; /* Adjust padding for mobile */
+        margin-bottom: 5%;
+    }
+
+    .product-title {
+        font-size: 150%; /* Smaller font size for mobile */
+    }
+
+    .product-name {
+        font-size: 300%; /* Smaller font size for mobile */
+    }
+
+    .scrub-types-grid {
+        gap: 40px; /* Reduce gap between scrub items */
+    }
+
+    .product-details-page {
+        --scrub-icon-size: 200px; /* Smaller icon size for mobile */
+    }
+
+    .decorative-cubes,
+    .decorative-pipe {
+        display: none; /* Hide decorative elements on mobile */
+    }
+}

@@ -117,6 +117,79 @@ body {
     width: 100%;
 }
 
+/* Hamburger Menu */
+.hamburger-menu {
+    display: none; /* Hidden by default on desktop */
+    flex-direction: column;
+    justify-content: space-around;
+    width: 30px;
+    height: 25px;
+    cursor: pointer;
+    margin-left: auto; /* Push to the right */
+    margin-right: var(--spacing-sm);
+    z-index: 450; /* Above header content */
+}
+
+.hamburger-menu .bar {
+    width: 100%;
+    height: 3px;
+    background-color: var(--primary-white);
+    transition: all 0.3s ease;
+}
+
+/* Mobile Menu Overlay */
+.mobile-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(15px);
+    z-index: 390; /* Below header, above main content */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-top: var(--header-height);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.mobile-menu-overlay.open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.mobile-nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.mobile-nav-item {
+    font-family: var(--font-family);
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--primary-white);
+    text-decoration: none;
+    transition: var(--transition-smooth);
+    position: relative;
+    padding: 10px 0;
+}
+
+.mobile-nav-item:hover {
+    color: var(--text-medium);
+    transform: translateX(5px);
+}
+
+.mobile-contact-button {
+    font-size: 20px;
+    padding: 15px 30px;
+}
+
 /* ===== GLASS BUTTON COMPONENT ===== */
 .glass-button {
     font-family: var(--font-family);
@@ -157,6 +230,31 @@ body {
     border-color: rgba(255, 255, 255, 0.3);
     transform: translateY(-2px);
     box-shadow: 0 8px 32px rgba(255, 255, 255, 0.1);
+}
+
+/* Responsive Design for Header */
+@media (max-width: 768px) {
+    .header-content {
+        padding: 0 var(--spacing-xs);
+    }
+
+    .header-logo {
+        margin-left: var(--spacing-xs);
+    }
+
+    .main-nav,
+    .glass-button {
+        display: none; /* Hide desktop nav on mobile */
+    }
+
+    .hamburger-menu {
+        display: flex; /* Show hamburger on mobile */
+    }
+
+    .mobile-menu-overlay {
+        opacity: 1; /* Ensure it's visible when open */
+        visibility: visible;
+    }
 }
 
 /* ===== MAIN LOGO OVERLAY ===== */
@@ -1093,18 +1191,52 @@ body {
 
 /* ===== RESPONSIVE DESIGN ===== */
 @media (max-width: 768px) {
+    .header-content {
+        padding: 0 var(--spacing-xs);
+    }
+
+    .header-logo {
+        margin-left: var(--spacing-xs);
+    }
+
+    .main-nav,
+    .glass-button {
+        display: none; /* Hide desktop nav on mobile */
+    }
+
+    .hamburger-menu {
+        display: flex; /* Show hamburger on mobile */
+    }
+
+    .mobile-menu-overlay {
+        opacity: 1; /* Ensure it's visible when open */
+        visibility: visible;
+    }
+
     .main-logo,
     .logo-glow {
-        width: 80vw;
+        width: 90vw; /* Slightly larger for better visibility on small screens */
+        max-width: 500px; /* Cap max size */
     }
     
-    .main-nav {
-        gap: var(--spacing-xs);
+    .glow-flare {
+        width: 300px; /* Smaller size for mobile */
+        height: 300px;
+        filter: blur(50px); /* Less blur for smaller size */
+        bottom: 5%; /* Adjust position */
+        left: -5%; /* Adjust position */
     }
-    
+
     .tagline {
         font-size: 16px;
         max-width: 300px;
+        bottom: var(--spacing-xs); /* Adjust position */
+        left: var(--spacing-xs); /* Adjust position */
+    }
+
+    .scroll-indicator {
+        bottom: var(--spacing-xs); /* Adjust position */
+        right: var(--spacing-xs); /* Adjust position */
     }
     
     .transition-text {
@@ -1112,14 +1244,14 @@ body {
     }
     
     .orb-container {
-        width: 600px;
-        height: 600px;
-        margin-top: -100px;
+        width: 300px; /* Smaller size for mobile */
+        height: 300px;
+        margin-top: -50px; /* Adjust margin */
         opacity: 0.8;
     }
     
     .orb-container > div {
-        transform: scale(10);
+        transform: scale(3); /* Reduced scale for mobile */
     }
     
     /* Product page responsive */
