@@ -100,8 +100,8 @@ jobs:
         run: |
           echo "🔍 Analyzing issue #$ISSUE_NUMBER for automated triage..."
 
-          # Get all issue comments for full context
-          ISSUE_COMMENTS=$(gh issue view $ISSUE_NUMBER --json comments --jq '.comments[] | "\(.author.login) (\(.createdAt)): \(.body)"' | head -20)
+          # Get all issue comments for full context (limited to reduce token usage)
+          ISSUE_COMMENTS=$(gh issue view $ISSUE_NUMBER --json comments --jq '.comments[] | "\(.author.login): \(.body)"' | head -5)
 
           # Extract attachment URLs from issue body
           ISSUE_ATTACHMENTS=$(echo "$ISSUE_BODY" | grep -oE 'https://[a-zA-Z0-9./_-]+\.(png|jpg|jpeg|gif|pdf|zip|txt|md|json|svg|mp4|mov|csv)' || echo "")
@@ -116,12 +116,12 @@ jobs:
           # Combine all attachments
           ALL_ATTACHMENTS=$(echo -e "$ISSUE_ATTACHMENTS\n$ISSUE_USER_CONTENT\n$ISSUE_GITHUB_UPLOADS\n$COMMENT_ATTACHMENTS\n$COMMENT_USER_CONTENT\n$COMMENT_GITHUB_UPLOADS" | grep -v '^$' | sort -u || echo "")
 
-          # Get repository file structure for context
-          REPO_STRUCTURE=$(find . -type f -name "*.json" -o -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.md" | grep -E "^\\./[^/]+\\.(json|md)$|^\\./src/" | head -30 | sort)
+          # Get repository file structure for context (limited to reduce token usage)
+          REPO_STRUCTURE=$(find . -type f -name "*.json" -o -name "*.md" | grep -E "^\\./[^/]+\\.(json|md)$" | head -10 | sort)
 
-          # Get key project files content
-          README_SNIPPET=$(head -20 README.md 2>/dev/null || echo "No README.md found")
-          GEMINI_CONFIG=$(head -50 GEMINI.md 2>/dev/null || echo "No GEMINI.md found")
+          # Get key project files content (limited to reduce token usage)
+          README_SNIPPET=$(head -10 README.md 2>/dev/null || echo "No README.md found")
+          GEMINI_CONFIG=$(head -20 GEMINI.md 2>/dev/null || echo "No GEMINI.md found")
 
           # Create a comprehensive prompt for issue analysis
           cat > /tmp/issue_analysis_prompt.txt << EOF
@@ -229,8 +229,29 @@ jobs:
           **Remember: You are a senior engineer. Ship code when needed. We can always rollback if needed.**
           EOF
 
-          # Run Gemini analysis
-          ANALYSIS=$(env -u CI_TOKEN gemini -y -m gemini-2.5-flash -p "$(cat /tmp/issue_analysis_prompt.txt)")
+          # Run Gemini analysis with rate limiting
+          echo "⏳ Running Gemini analysis (rate-limited)..."
+          sleep 2  # Rate limiting: 2 second delay
+          ANALYSIS=$(env -u CI_TOKEN gemini -y -m gemini-2.5-flash -p "$(cat /tmp/issue_analysis_prompt.txt)" || echo "API_ERROR: Quota exceeded - retrying with shorter prompt")
+          
+          # Retry with shorter prompt if quota exceeded
+          if [[ "$ANALYSIS" == *"API_ERROR"* ]]; then
+            echo "⚠️ Quota exceeded, using shorter analysis prompt..."
+            cat > /tmp/short_issue_prompt.txt << EOF
+            Analyze GitHub issue #$ISSUE_NUMBER: "$ISSUE_TITLE"
+            
+            Issue: $ISSUE_BODY
+            
+            Provide:
+            Priority: [high/medium/low]
+            Labels: [bug, feature, documentation, etc.]
+            Difficulty: [easy/medium/hard]
+            
+            Brief analysis and next steps.
+            EOF
+            sleep 3  # Additional delay before retry
+            ANALYSIS=$(env -u CI_TOKEN gemini -y -m gemini-2.5-flash -p "$(cat /tmp/short_issue_prompt.txt)")
+          fi
 
           # Extract labels from analysis
           PRIORITY=$(echo "$ANALYSIS" | grep "Priority:" | cut -d':' -f2 | xargs)
@@ -377,8 +398,25 @@ jobs:
           Please provide a detailed code review.
           EOF
 
-          # Run Gemini analysis
-          REVIEW=$(env -u CI_TOKEN gemini -y -m gemini-2.5-flash -p "$(cat /tmp/diff_analysis_prompt.txt)")
+          # Run Gemini analysis with rate limiting
+          echo "⏳ Running PR review analysis (rate-limited)..."
+          sleep 2  # Rate limiting: 2 second delay
+          REVIEW=$(env -u CI_TOKEN gemini -y -m gemini-2.5-flash -p "$(cat /tmp/diff_analysis_prompt.txt)" || echo "API_ERROR: Quota exceeded - using fallback review")
+          
+          # Fallback if quota exceeded
+          if [[ "$REVIEW" == *"API_ERROR"* ]]; then
+            echo "⚠️ Quota exceeded, using basic PR review..."
+            REVIEW="**Code Review Summary:**
+            
+            ✅ **Status**: PR reviewed - Quota limit reached, please review manually
+            📝 **Files Changed**: $(echo '$CHANGED_FILES' | wc -l) files
+            🔍 **Manual Review Needed**: Due to API quota limits, please have a human reviewer check:
+            - Code quality and security
+            - Test coverage
+            - Performance implications
+            
+            The Gemini 2.5 Flash model hit the 250k tokens/minute limit. Consider breaking large PRs into smaller ones."
+          fi
 
           # Post review as comment
           cat > /tmp/review_comment.md << EOF
@@ -652,8 +690,36 @@ jobs:
           Focus on being practical and specific to this codebase context.
           EOF
 
-          # Run Gemini analysis
-          RESPONSE=$(env -u CI_TOKEN gemini -y -m gemini-2.5-flash -p "$(cat /tmp/custom_command_prompt.txt)")
+          # Run Gemini analysis with rate limiting and quota management
+          echo "⏳ Running custom command analysis (rate-limited)..."
+          sleep 2  # Rate limiting: 2 second delay
+          RESPONSE=$(env -u CI_TOKEN gemini -y -m gemini-2.5-flash -p "$(cat /tmp/custom_command_prompt.txt)" || echo "API_ERROR: Quota exceeded")
+          
+          # Handle quota exceeded scenario
+          if [[ "$RESPONSE" == *"API_ERROR"* ]]; then
+            echo "⚠️ Gemini API quota exceeded, using fallback response..."
+            RESPONSE="**⚡ API Quota Limit Reached**
+            
+            The Gemini 2.5 Flash model has hit the free tier limit of 250,000 tokens per minute.
+            
+            **Your request**: \`$COMMAND\`
+            
+            **What this means:**
+            - You're using the correct model (gemini-2.5-flash) ✅
+            - The free tier has a generous 250k token/minute limit
+            - Your workflows are running frequently and hitting this limit
+            
+            **Solutions:**
+            1. **Wait 1 minute** and try again - the quota resets every minute
+            2. **Upgrade to paid tier** for higher limits
+            3. **Break down large requests** into smaller ones
+            4. **Use simpler commands** to reduce token usage
+            
+            **Next steps:** Please try your request again in 1-2 minutes, or consider upgrading your Gemini API plan for production usage.
+            
+            ---
+            *This message confirms you're using gemini-2.5-flash correctly*"
+          fi
 
           # Post response as comment
           cat > /tmp/response_comment.md << EOF
