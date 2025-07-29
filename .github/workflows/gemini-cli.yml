@@ -444,8 +444,24 @@ jobs:
                 continue
               fi
               
-              # Execute git/gh commands
-              if [[ "$cmd" =~ ^(git|gh|bun|npm) ]]; then
+              # Handle gh pr create specially to fix quote issues
+              if [[ "$cmd" =~ ^gh\ pr\ create ]]; then
+                echo "Executing PR creation command..."
+                # Extract title and body more safely
+                if [[ "$cmd" =~ --title\ \"([^\"]+)\" ]]; then
+                  PR_TITLE="${BASH_REMATCH[1]}"
+                fi
+                if [[ "$cmd" =~ --body\ \"(.+)$ ]]; then
+                  PR_BODY="${BASH_REMATCH[1]}"
+                  # Remove trailing quote if present
+                  PR_BODY="${PR_BODY%\"}"
+                  # Ensure PR body is complete
+                  if [[ ! "$PR_BODY" =~ \#[0-9]+ ]]; then
+                    PR_BODY="$PR_BODY Closes #${ISSUE_NUMBER}"
+                  fi
+                fi
+                gh pr create --title "$PR_TITLE" --body "$PR_BODY" || echo "Warning: PR creation failed"
+              elif [[ "$cmd" =~ ^(git|gh|bun|npm) ]]; then
                 echo "Executing: $cmd"
                 eval "$cmd" || echo "Warning: Command failed: $cmd"
               fi
@@ -457,8 +473,22 @@ jobs:
                 if [[ "$line" =~ ^FILE:\ (.+)$ ]]; then
                   FILENAME="${BASH_REMATCH[1]}"
                   echo "Creating file: $FILENAME"
-                  # Extract content until END FILE
-                  FILE_CONTENT=$(echo "$FILE_CONTENTS" | sed -n "/^FILE: $FILENAME$/,/^END FILE/p" | sed '1d;$d')
+                  
+                  # Create directory if it doesn't exist
+                  DIR=$(dirname "$FILENAME")
+                  if [ ! -d "$DIR" ] && [ "$DIR" != "." ]; then
+                    echo "Creating directory: $DIR"
+                    mkdir -p "$DIR"
+                  fi
+                  
+                  # Extract content until END FILE - handle filename with special chars
+                  FILE_CONTENT=$(echo "$FILE_CONTENTS" | awk -v fname="$FILENAME" '
+                    $0 ~ "^FILE: " fname "$" {found=1; next}
+                    found && /^END FILE/ {exit}
+                    found {print}
+                  ')
+                  
+                  # Write file content
                   echo "$FILE_CONTENT" > "$FILENAME"
                 fi
               done <<< "$FILE_CONTENTS"
@@ -941,8 +971,24 @@ jobs:
                 continue
               fi
               
-              # Execute git/gh commands
-              if [[ "$cmd" =~ ^(git|gh|bun|npm) ]]; then
+              # Handle gh pr create specially to fix quote issues
+              if [[ "$cmd" =~ ^gh\ pr\ create ]]; then
+                echo "Executing PR creation command..."
+                # Extract title and body more safely
+                if [[ "$cmd" =~ --title\ \"([^\"]+)\" ]]; then
+                  PR_TITLE="${BASH_REMATCH[1]}"
+                fi
+                if [[ "$cmd" =~ --body\ \"(.+)$ ]]; then
+                  PR_BODY="${BASH_REMATCH[1]}"
+                  # Remove trailing quote if present
+                  PR_BODY="${PR_BODY%\"}"
+                  # Ensure PR body is complete
+                  if [[ ! "$PR_BODY" =~ \#[0-9]+ ]]; then
+                    PR_BODY="$PR_BODY Closes #${ISSUE_NUMBER}"
+                  fi
+                fi
+                gh pr create --title "$PR_TITLE" --body "$PR_BODY" || echo "Warning: PR creation failed"
+              elif [[ "$cmd" =~ ^(git|gh|bun|npm) ]]; then
                 echo "Executing: $cmd"
                 eval "$cmd" || echo "Warning: Command failed: $cmd"
               fi
@@ -954,8 +1000,22 @@ jobs:
                 if [[ "$line" =~ ^FILE:\ (.+)$ ]]; then
                   FILENAME="${BASH_REMATCH[1]}"
                   echo "Creating file: $FILENAME"
-                  # Extract content until END FILE
-                  FILE_CONTENT=$(echo "$FILE_CONTENTS" | sed -n "/^FILE: $FILENAME$/,/^END FILE/p" | sed '1d;$d')
+                  
+                  # Create directory if it doesn't exist
+                  DIR=$(dirname "$FILENAME")
+                  if [ ! -d "$DIR" ] && [ "$DIR" != "." ]; then
+                    echo "Creating directory: $DIR"
+                    mkdir -p "$DIR"
+                  fi
+                  
+                  # Extract content until END FILE - handle filename with special chars
+                  FILE_CONTENT=$(echo "$FILE_CONTENTS" | awk -v fname="$FILENAME" '
+                    $0 ~ "^FILE: " fname "$" {found=1; next}
+                    found && /^END FILE/ {exit}
+                    found {print}
+                  ')
+                  
+                  # Write file content
                   echo "$FILE_CONTENT" > "$FILENAME"
                 fi
               done <<< "$FILE_CONTENTS"
