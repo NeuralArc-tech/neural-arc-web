@@ -37,9 +37,9 @@ jobs:
         with:
           python-version: '3.11'
           
-      - name: Install Browser-Use and dependencies
+      - name: Install dependencies (without Browser-Use agent)
         run: |
-          pip install browser-use playwright opencv-python-headless numpy pillow
+          pip install playwright opencv-python-headless numpy pillow
           playwright install chromium
           
       - name: Create visual test script
@@ -50,8 +50,7 @@ jobs:
           import sys
           from datetime import datetime
           from pathlib import Path
-          from browser_use import Agent
-          from browser_use.browser.browser import Browser, BrowserConfig
+          from playwright.async_api import async_playwright
           from PIL import Image
           import numpy as np
           import cv2
@@ -59,57 +58,68 @@ jobs:
           async def capture_screenshots(url, viewports):
               """Capture screenshots at different viewport sizes"""
               screenshots = {}
-              browser_config = BrowserConfig(
-                  headless=True,
-                  disable_security=True,
-                  extra_chromium_args=['--no-sandbox', '--disable-dev-shm-usage']
-              )
               
-              for viewport in viewports:
-                  width, height = map(int, viewport.split('x'))
-                  print(f"Capturing screenshot at {width}x{height}")
+              async with async_playwright() as p:
+                  browser = await p.chromium.launch(
+                      headless=True,
+                      args=['--no-sandbox', '--disable-dev-shm-usage']
+                  )
                   
-                  browser = Browser(config=browser_config)
-                  await browser.start()
-                  
-                  page = await browser.get_current_page()
-                  await page.set_viewport_size({"width": width, "height": height})
-                  await page.goto(url, wait_until="networkidle")
-                  
-                  # Wait for animations to complete
-                  await asyncio.sleep(2)
-                  
-                  # Capture screenshot
-                  screenshot_path = f"screenshots/{viewport}.png"
-                  await page.screenshot(path=screenshot_path, full_page=True)
-                  screenshots[viewport] = screenshot_path
+                  for viewport in viewports:
+                      width, height = map(int, viewport.split('x'))
+                      print(f"Capturing screenshot at {width}x{height}")
+                      
+                      page = await browser.new_page(viewport={'width': width, 'height': height})
+                      await page.goto(url, wait_until="networkidle")
+                      
+                      # Wait for animations to complete
+                      await asyncio.sleep(3)
+                      
+                      # Capture screenshot
+                      screenshot_path = f"screenshots/{viewport}.png"
+                      await page.screenshot(path=screenshot_path, full_page=True)
+                      screenshots[viewport] = screenshot_path
+                      
+                      await page.close()
                   
                   await browser.close()
                   
               return screenshots
           
           async def visual_analysis(url, viewports, test_type):
-              """Perform visual analysis using Browser-Use agent"""
-              agent = Agent(
-                  task=f"""Analyze the website at {url} for:
-                  1. Visual consistency across viewport sizes: {', '.join(viewports)}
-                  2. Responsive design issues
-                  3. Layout problems or overlapping elements
-                  4. Typography and spacing issues
-                  5. Color contrast and accessibility
-                  6. Mobile-specific issues (if applicable)
-                  
-                  Provide a detailed report with specific issues found and recommendations.
-                  """,
-                  llm=None  # Will use default model
-              )
+              """Perform visual analysis with screenshot capture"""
               
               # Capture screenshots first
               Path("screenshots").mkdir(exist_ok=True)
               screenshots = await capture_screenshots(url, viewports)
               
-              # Run agent analysis
-              result = await agent.run()
+              # Generate basic analysis without Browser-Use agent
+              analysis_result = f"""
+              ## Visual Analysis Summary
+              
+              **Responsive Design Check for {test_type} testing:**
+              
+              ### Screenshots Analysis
+              - **Desktop ({max(viewports, key=lambda x: int(x.split('x')[0]))})**: Full layout captured for baseline comparison
+              - **Mobile ({min(viewports, key=lambda x: int(x.split('x')[0]))})**: Small screen layout analysis
+              - **Tablet**: Medium breakpoint behavior documented
+              
+              ### Common Responsive Issues to Check:
+              1. **Navigation Elements**: Check if navigation collapses or overflows
+              2. **Text Readability**: Ensure fonts scale appropriately
+              3. **Interactive Elements**: Verify buttons/links are touch-friendly (44px min)
+              4. **Content Layout**: Check for overlapping elements or excessive white space
+              5. **Image Scaling**: Ensure images respond to viewport changes
+              6. **Animation Performance**: Verify animations don't break layout
+              
+              ### Recommendations:
+              - Review screenshots for layout inconsistencies
+              - Test actual device interaction for touch usability
+              - Validate media query breakpoints match design requirements
+              - Ensure content hierarchy remains clear across all viewports
+              
+              **Note**: This is an automated screenshot capture. Manual review of captured images is required for detailed analysis.
+              """
               
               # Generate report
               report = f"""# Visual Verification Report
@@ -125,7 +135,7 @@ jobs:
               for viewport, path in screenshots.items():
                   report += f"\n### {viewport}\n![{viewport}]({path})\n"
               
-              report += f"\n## Analysis Results\n{result}\n"
+              report += f"\n## Analysis Results\n{analysis_result}\n"
               
               # Save report
               with open("visual-report.md", "w") as f:
