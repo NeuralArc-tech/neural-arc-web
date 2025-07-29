@@ -170,6 +170,10 @@ jobs:
           # Get key project files content
           README_SNIPPET=$(head -20 README.md 2>/dev/null || echo "No README.md found")
           GEMINI_CONFIG=$(head -50 GEMINI.md 2>/dev/null || echo "No GEMINI.md found")
+          
+          # Get existing labels from the repository
+          EXISTING_LABELS=$(gh label list --json name,description --jq '.[] | "\(.name) - \(.description)"' | head -20)
+          LABEL_NAMES_ONLY=$(gh label list --json name --jq '.[].name' | paste -sd ',' -)
 
           # Create a comprehensive prompt for issue analysis
           cat > /tmp/issue_analysis_prompt.txt << EOF
@@ -296,16 +300,18 @@ jobs:
           You MUST start your response with these exact fields:
 
           Priority: [high/medium/low]
-          Labels: [maximum 3 most relevant labels only - choose the most important ones]
+          Labels: [choose 1-3 from existing labels ONLY]
           Difficulty: [easy/medium/hard]
           
+          **EXISTING LABELS IN THIS REPOSITORY:**
+          $EXISTING_LABELS
+          
           **LABEL SELECTION RULES:**
-          - Choose MAXIMUM 3 labels that best represent the issue
-          - Avoid redundant or overlapping labels
-          - Focus on the primary type (bug/enhancement/documentation)
-          - Add one technical area if relevant (ui/ux, performance, security)
-          - Only add specialty labels if truly essential
-          - DO NOT use generic labels like "recommendations" unless no better option exists
+          - Choose ONLY from the existing labels listed above
+          - Select 1-3 most relevant labels that best represent the issue
+          - DO NOT create new labels - only use existing ones
+          - Focus on the most accurate match for the issue type
+          - Priority and difficulty are separate from content labels
 
           ## Analysis
           [Your detailed analysis here]
@@ -339,22 +345,11 @@ jobs:
             LABELS=$(echo "$ANALYSIS" | grep -i "Labels:" | cut -d':' -f2 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
             DIFFICULTY=$(echo "$ANALYSIS" | grep -i "Difficulty:" | cut -d':' -f2 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
 
-            # Function to create label if it doesn't exist
-            create_label_if_missing() {
-              local label_name="$1"
-              local label_color="$2"
-              local label_description="$3"
-              
-              # Check if label exists, if not create it
-              if ! gh label list --json name --jq '.[].name' | grep -q "^${label_name}$"; then
-                echo "Creating missing label: $label_name"
-                gh label create "$label_name" --color="$label_color" --description="$label_description" || echo "Failed to create label: $label_name"
-              fi
-            }
-
             # Apply labels using GitHub CLI with proper quoting
             if [ ! -z "$LABELS" ]; then
-              # Limit to maximum 3 labels to avoid clutter
+              # Get list of existing labels for validation
+              VALID_LABELS=$(gh label list --json name --jq '.[].name')
+              
               label_count=0
               max_labels=3
               
@@ -362,65 +357,32 @@ jobs:
               echo "$LABELS" | tr ',' '\n' | while read -r label; do
                 # Stop if we've reached the maximum
                 if [ $label_count -ge $max_labels ]; then
-                  echo "Skipping additional labels (max $max_labels reached)"
+                  echo "Reached maximum of $max_labels labels"
                   break
                 fi
+                
                 # Clean label of quotes and whitespace
                 clean_label=$(echo "$label" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | sed 's/^"//' | sed 's/"$//')
+                
                 if [ ! -z "$clean_label" ]; then
-                  # Create common labels with appropriate colors
-                  case "$clean_label" in
-                    "bug") create_label_if_missing "$clean_label" "d73a4a" "Something isn't working" ;;
-                    "enhancement") create_label_if_missing "$clean_label" "a2eeef" "New feature or request" ;;
-                    "documentation") create_label_if_missing "$clean_label" "0075ca" "Improvements or additions to documentation" ;;
-                    "analysis") create_label_if_missing "$clean_label" "7057ff" "Code analysis and review" ;;
-                    "code-quality") create_label_if_missing "$clean_label" "b60205" "Code quality improvements" ;;
-                    "performance") create_label_if_missing "$clean_label" "fbca04" "Performance optimization" ;;
-                    "security") create_label_if_missing "$clean_label" "d93f0b" "Security related issues" ;;
-                    "recommendations") create_label_if_missing "$clean_label" "0e8a16" "AI generated recommendations" ;;
-                    "ui/ux") create_label_if_missing "$clean_label" "f9d0c4" "User interface and experience" ;;
-                    "architecture") create_label_if_missing "$clean_label" "5319e7" "System architecture changes" ;;
-                    *) create_label_if_missing "$clean_label" "ededed" "AI generated label" ;;
-                  esac
-                  
-                  # Apply the label
-                  gh issue edit $ISSUE_NUMBER --add-label "$clean_label" || echo "Could not add label: $clean_label"
-                  label_count=$((label_count + 1))
-                  echo "Applied label $label_count/$max_labels: $clean_label"
+                  # Check if label exists in repo
+                  if echo "$VALID_LABELS" | grep -q "^${clean_label}$"; then
+                    # Apply the label
+                    gh issue edit $ISSUE_NUMBER --add-label "$clean_label" && {
+                      label_count=$((label_count + 1))
+                      echo "Applied existing label $label_count/$max_labels: $clean_label"
+                    } || echo "Failed to apply label: $clean_label"
+                  else
+                    echo "Skipping non-existent label: $clean_label"
+                  fi
                 fi
               done
             fi
 
-            # Add priority and difficulty labels with proper quoting
-            if [ ! -z "$PRIORITY" ]; then
-              clean_priority=$(echo "$PRIORITY" | sed 's/^"//' | sed 's/"$//')
-              priority_label="priority: $clean_priority"
-              
-              # Create priority labels with appropriate colors
-              case "$clean_priority" in
-                "high") create_label_if_missing "$priority_label" "d73a4a" "High priority issue" ;;
-                "medium") create_label_if_missing "$priority_label" "fbca04" "Medium priority issue" ;;
-                "low") create_label_if_missing "$priority_label" "0e8a16" "Low priority issue" ;;
-                *) create_label_if_missing "$priority_label" "ededed" "Priority level" ;;
-              esac
-              
-              gh issue edit $ISSUE_NUMBER --add-label "$priority_label" || true
-            fi
-            
-            if [ ! -z "$DIFFICULTY" ]; then
-              clean_difficulty=$(echo "$DIFFICULTY" | sed 's/^"//' | sed 's/"$//')
-              difficulty_label="difficulty: $clean_difficulty"
-              
-              # Create difficulty labels with appropriate colors
-              case "$clean_difficulty" in
-                "easy") create_label_if_missing "$difficulty_label" "0e8a16" "Easy to implement" ;;
-                "medium") create_label_if_missing "$difficulty_label" "fbca04" "Medium complexity" ;;
-                "hard") create_label_if_missing "$difficulty_label" "d73a4a" "High complexity" ;;
-                *) create_label_if_missing "$difficulty_label" "ededed" "Difficulty level" ;;
-              esac
-              
-              gh issue edit $ISSUE_NUMBER --add-label "$difficulty_label" || true
-            fi
+            # Note: Priority and difficulty are metadata, not labels in this implementation
+            # If you want to use priority/difficulty labels, ensure they exist in your repo first
+            echo "Priority identified: $PRIORITY"
+            echo "Difficulty identified: $DIFFICULTY"
           else
             echo "⚠️ AI analysis failed, skipping automatic labeling"
           fi
