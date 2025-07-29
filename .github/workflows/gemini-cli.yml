@@ -96,26 +96,33 @@ jobs:
             local retry_count=0
             
             while [ $retry_count -lt $max_retries ]; do
-              # Escape quotes in prompt for JSON
-              local escaped_prompt=$(echo "$prompt" | sed 's/"/\\"/g' | sed "s/'/\\'/g")
+              # Create proper JSON payload using jq to handle escaping
+              local json_payload=$(jq -n \
+                --arg content "$prompt" \
+                '{
+                  "messages": [
+                    {
+                      "content": $content,
+                      "role": "user"
+                    }
+                  ]
+                }')
               
-              # Call custom AI API
+              # Call custom AI API with better error handling
               local response=$(curl -s --location 'https://genapi.ashari.cloud/v1/chat/completions' \
                 --header 'User-Agent: BrainyBuddy-API/bandung' \
                 --header 'Content-Type: application/json' \
-                --data "{
-                  \"messages\": [
-                    {
-                      \"content\": \"$escaped_prompt\",
-                      \"role\": \"user\"
-                    }
-                  ]
-                }")
+                --data "$json_payload" 2>/dev/null)
               
-              # Check if response is valid
+              echo "API Response received, validating..." >&2
+              
+              # Check if response is valid JSON with expected structure
               if echo "$response" | jq -e '.choices[0].message.content' > /dev/null 2>&1; then
+                echo "API call successful!" >&2
                 echo "$response" | jq -r '.choices[0].message.content'
                 return 0
+              else
+                echo "API error - Invalid response format: ${response:0:300}..." >&2
               fi
               
               retry_count=$((retry_count + 1))
