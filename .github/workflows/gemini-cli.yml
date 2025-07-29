@@ -254,15 +254,25 @@ jobs:
           - Code quality assessment
           - Security considerations
           - Performance optimization suggestions
+          
+          **IMPORTANT: After providing analysis, if you have actionable recommendations:**
+          - End your response with: "@gemini please implement these recommendations in a new branch"
+          - This will trigger a follow-up comment to actually implement the suggested changes
+          - Do not implement changes in analysis mode - only provide recommendations
 
           ## FOR IMPLEMENTATION REQUESTS:
-          1. Create a descriptive branch name (feature/issue-${ISSUE_NUMBER}-[short-description])
-          2. Implement the solution completely - don't do partial implementations
-          3. Write clean, working code (quality checks can be done later)
-          4. Stage and commit with conventional commit message
-          5. Push the branch to origin
-          6. Create PR using: gh pr create --title "[Creative Title]" --body "[Compelling description that closes #${ISSUE_NUMBER}]"
-          7. SHIP THE CODE - don't get blocked by tooling issues
+          🚨 **NEVER APPLY CHANGES TO MASTER BRANCH - ALWAYS USE FEATURE BRANCHES** 🚨
+          
+          1. Verify not on master: git branch --show-current (must NOT be master/main)
+          2. Create a descriptive branch name (feature/issue-${ISSUE_NUMBER}-[short-description])
+          3. Implement the solution completely - don't do partial implementations
+          4. Write clean, working code (quality checks can be done later)
+          5. Stage and commit with conventional commit message
+          6. Push the branch to origin
+          7. Create PR using: gh pr create --title "[Creative Title]" --body "[Compelling description that closes #${ISSUE_NUMBER}]"
+          8. SHIP THE CODE - don't get blocked by tooling issues
+          
+          **BRANCH PROTECTION: All changes must go through PRs, never direct to master**
 
           ## CRITICAL: MANDATORY RESPONSE FORMAT
 
@@ -693,7 +703,10 @@ jobs:
           - If user requests specific implementation → Create code and PRs autonomously
           - Always be helpful and responsive to the user's actual request
 
-          **FOR ANALYSIS REQUESTS:** Provide detailed insights, recommendations, and explanations
+          **FOR ANALYSIS REQUESTS:** 
+          - Provide detailed insights, recommendations, and explanations
+          - If you have actionable recommendations, end with: "@gemini please implement these recommendations in a new branch"
+          - This triggers implementation in a separate workflow to keep analysis and implementation separate
           **FOR IMPLEMENTATION REQUESTS:** Ship working code immediately with these principles:
           - Make decisions based on technical merit
           - Ship working code - don't overthink or ask permission
@@ -703,15 +716,20 @@ jobs:
           - NEVER use force push (git push -f) - preserve commit history
 
           **WHEN USER REQUESTS CODE CHANGES - IMPLEMENT IMMEDIATELY:**
-          1. Create a descriptive branch: feature/[meaningful-name]
-          2. Implement the complete solution (no partial work)
-          3. Write working code - focus on functionality over perfection
-          4. Stage all changes: git add .
-          5. Commit with conventional message: "feat: implement [feature]" or "fix: resolve [issue]"
-          6. Push branch: git push origin [branch-name] (NEVER use --force)
-          7. Create PR: gh pr create --title "[Creative, compelling title]" --body "[Description that closes #${ISSUE_NUMBER}]"
-          8. SHIP IT - don't get blocked by tooling or linting issues
-          9. Report the PR URL immediately
+          🚨 **CRITICAL: NEVER APPLY CHANGES TO MASTER BRANCH** 🚨
+          
+          1. Verify current branch: git branch --show-current (should NOT be master/main)
+          2. Create a descriptive branch: feature/[meaningful-name] or feature/issue-${ISSUE_NUMBER}-[description]
+          3. Implement the complete solution (no partial work)
+          4. Write working code - focus on functionality over perfection  
+          5. Stage all changes: git add .
+          6. Commit with conventional message: "feat: implement [feature]" or "fix: resolve [issue]"
+          7. Push branch: git push origin [branch-name] (NEVER use --force)
+          8. Create PR: gh pr create --title "[Creative, compelling title]" --body "[Description that closes #${ISSUE_NUMBER}]"
+          9. SHIP IT - don't get blocked by tooling or linting issues
+          10. Report the PR URL immediately
+          
+          **BRANCH PROTECTION: Always work in feature branches, never master/main**
 
           **IMPLEMENTATION SCOPE - BE AGGRESSIVE:**
           - UI components and styling changes
@@ -736,7 +754,8 @@ jobs:
 
           For ANALYSIS requests (review/analyze/help/explain):
           - Provide comprehensive insights and recommendations
-          - End with: "Status: Analysis completed successfully"
+          - If you have actionable recommendations, end with: "@gemini please implement these recommendations in a new branch"
+          - Then add: "Status: Analysis completed successfully"
 
           For IMPLEMENTATION requests (add/fix/create/implement):  
           - Either implement the code with git commands OR explain why blocked
