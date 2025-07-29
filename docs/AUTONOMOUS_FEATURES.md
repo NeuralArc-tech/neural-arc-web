@@ -130,7 +130,7 @@ When you request implementation (`@gemini implement X`), the AI:
 @gemini implement dark mode toggle
 
 # Visual testing
-@ai test responsive layout
+@gemini test responsive layout
 
 # Code review assistance
 @gemini review this function for security issues
@@ -142,19 +142,19 @@ When you request implementation (`@gemini implement X`), the AI:
 ### **For Project Managers:**
 ```bash
 # Issue prioritization
-@ai analyze and prioritize this issue
+@gemini analyze and prioritize this issue
 
 # Feature planning
 @gemini create implementation plan for user dashboard
 
 # Progress tracking
-@ai status update on issue #123
+@gemini status update on issue #123
 ```
 
 ### **For Designers:**
 ```bash
 # Visual consistency
-@ai screenshot all viewport sizes
+@gemini screenshot all viewport sizes
 
 # Accessibility check
 @gemini analyze accessibility compliance
@@ -191,7 +191,7 @@ The enhanced Hybrid AI Assistant is now **production-ready** with:
 - ✅ **Visual Testing Integration** 
 - ✅ **Comprehensive Documentation**
 
-**Start using:** Create an issue and comment `@ai implement [your feature]` to see autonomous development in action! 🚀
+**Start using:** Create an issue and comment `@gemini implement [your feature]` to see autonomous development in action! 🚀
 
 ---
 

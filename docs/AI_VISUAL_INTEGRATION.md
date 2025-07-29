@@ -66,7 +66,7 @@ When you open a PR with UI changes (CSS, JS, components), the system:
 ```bash
 # AI will create branch, write code, make PR
 @gemini implement user authentication system
-@ai create a dark mode toggle
+@gemini create a dark mode toggle
 @gemini fix the responsive layout bug
 
 # AI analyzes, plans, codes, and submits for review
@@ -76,7 +76,7 @@ When you open a PR with UI changes (CSS, JS, components), the system:
 
 ```bash
 # Trigger visual verification
-@ai test the mobile layout
+@gemini test the mobile layout
 @gemini screenshot responsive design
 @copilot analyze visual accessibility
 ```
@@ -86,7 +86,7 @@ When you open a PR with UI changes (CSS, JS, components), the system:
 ```bash
 # Get detailed code analysis
 @gemini review this function for security
-@ai explain this algorithm
+@gemini explain this algorithm
 @copilot suggest performance improvements
 ```
 
