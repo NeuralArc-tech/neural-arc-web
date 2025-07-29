@@ -274,6 +274,22 @@ jobs:
           8. SHIP THE CODE - don't get blocked by tooling issues
           
           **BRANCH PROTECTION: All changes must go through PRs, never direct to master**
+          
+          **PROVIDE IMPLEMENTATION IN THIS FORMAT:**
+          
+          IMPLEMENTATION COMMANDS:
+          git checkout -b feature/issue-${ISSUE_NUMBER}-description
+          git add .
+          git commit -m "feat: implement feature description"
+          git push origin feature/issue-${ISSUE_NUMBER}-description
+          gh pr create --title "Title" --body "Description closes #${ISSUE_NUMBER}"
+          END COMMANDS
+          
+          **For file creation/modification:**
+          
+          FILE: path/to/file.ext
+          [entire file content here]
+          END FILE
 
           ## CRITICAL: MANDATORY RESPONSE FORMAT
 
@@ -407,6 +423,48 @@ jobs:
             fi
           else
             echo "⚠️ AI analysis failed, skipping automatic labeling"
+          fi
+          
+          # Check if AI wants to implement code
+          if echo "$ANALYSIS" | grep -q "IMPLEMENTATION COMMANDS:"; then
+            echo "🚀 Implementation commands detected in issue analysis!"
+            
+            # Extract commands between markers
+            COMMANDS=$(echo "$ANALYSIS" | sed -n '/^IMPLEMENTATION COMMANDS:/,/^END COMMANDS/p' | sed '1d;$d')
+            
+            # Extract file creation instructions
+            FILE_CONTENTS=$(echo "$ANALYSIS" | sed -n '/^FILE:.*$/,/^END FILE/p')
+            
+            echo "📝 Executing implementation..."
+            
+            # Execute commands line by line
+            while IFS= read -r cmd; do
+              # Skip empty lines and comments
+              if [[ -z "$cmd" || "$cmd" =~ ^#.*$ ]]; then
+                continue
+              fi
+              
+              # Execute git/gh commands
+              if [[ "$cmd" =~ ^(git|gh|bun|npm) ]]; then
+                echo "Executing: $cmd"
+                eval "$cmd" || echo "Warning: Command failed: $cmd"
+              fi
+            done <<< "$COMMANDS"
+            
+            # Process file creations if any
+            if [ ! -z "$FILE_CONTENTS" ]; then
+              while IFS= read -r line; do
+                if [[ "$line" =~ ^FILE:\ (.+)$ ]]; then
+                  FILENAME="${BASH_REMATCH[1]}"
+                  echo "Creating file: $FILENAME"
+                  # Extract content until END FILE
+                  FILE_CONTENT=$(echo "$FILE_CONTENTS" | sed -n "/^FILE: $FILENAME$/,/^END FILE/p" | sed '1d;$d')
+                  echo "$FILE_CONTENT" > "$FILENAME"
+                fi
+              done <<< "$FILE_CONTENTS"
+            fi
+            
+            echo "✅ Implementation commands executed"
           fi
 
           # Post analysis as comment
