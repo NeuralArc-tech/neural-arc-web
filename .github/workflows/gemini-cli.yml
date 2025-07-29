@@ -264,22 +264,31 @@ jobs:
           6. Create PR using: gh pr create --title "[Creative Title]" --body "[Compelling description that closes #${ISSUE_NUMBER}]"
           7. SHIP THE CODE - don't get blocked by tooling issues
 
-          **Response Format:**
-          Priority: [level]
-          Labels: [comma-separated list]
-          Difficulty: [level]
+          ## CRITICAL: MANDATORY RESPONSE FORMAT
+
+          You MUST start your response with these exact fields:
+
+          Priority: [high/medium/low]
+          Labels: [specific, comma-separated, labels]
+          Difficulty: [easy/medium/hard]
 
           ## Analysis
-          [Provide the requested analysis or technical explanation]
+          [Your detailed analysis here]
 
           ## Implementation Status
-          Choose ONE based on the request type:
-          - 📊 ANALYSIS PROVIDED: [Comprehensive analysis and recommendations completed]
-          - ✅ NEW CODE SHIPPED: [Description of new code you created + PR URL]
-          - 🔄 ALREADY EXISTS: [Feature already implemented, no changes needed]
-          - ❌ BLOCKED: [Specific technical reason why you cannot complete the request]
+          **IMPORTANT: Only claim actions you ACTUALLY performed with git commands**
 
-          **Remember: You are the Gemini AI assistant. Provide the analysis or implementation the user requested.**
+          Choose ONE and be truthful:
+          - 📊 ANALYSIS PROVIDED: Use for analysis/review requests - provide insights only
+          - ✅ NEW CODE SHIPPED: Only if you ACTUALLY created files, commits, branches, and PRs
+          - 🔄 ALREADY EXISTS: Feature already implemented, no changes needed
+          - ❌ BLOCKED: Specific technical reason preventing completion
+
+          **CRITICAL RULES:**
+          - NEVER claim to have created branches/PRs unless you actually executed git commands
+          - For analysis requests like "review this project", use "📊 ANALYSIS PROVIDED"
+          - For implementation requests like "add feature X", either implement or explain why blocked
+          - Always follow the exact format above for proper label extraction
           EOF
 
           # Load AI API function
@@ -718,12 +727,29 @@ jobs:
           EOF
           fi
 
-          # Add common instructions
+          # Add common instructions with mandatory format
           cat >> /tmp/custom_command_prompt.txt << EOF
 
-          If gh CLI fails, capture the exact error message and include it in your response.
+          ## CRITICAL: RESPONSE FORMAT REQUIREMENTS
 
-          For other requests, provide helpful, actionable responses with specific examples.
+          **MANDATORY: Your response must include these exact status indicators:**
+
+          For ANALYSIS requests (review/analyze/help/explain):
+          - Provide comprehensive insights and recommendations
+          - End with: "Status: Analysis completed successfully"
+
+          For IMPLEMENTATION requests (add/fix/create/implement):  
+          - Either implement the code with git commands OR explain why blocked
+          - If you implement: "Status: Code shipped - [describe what you built + PR URL]"
+          - If blocked: "Status: Blocked - [specific technical reason]"
+
+          **CRITICAL RULES:**
+          - NEVER claim to have created branches/commits/PRs unless you ACTUALLY did
+          - Be truthful about what actions you performed vs what you would do
+          - If you only provided analysis, say "Analysis completed successfully"
+          - If you actually implemented code, provide the PR URL as proof
+
+          If gh CLI fails, capture the exact error message and include it in your response.
           Focus on being practical and specific to this codebase context.
           EOF
 
