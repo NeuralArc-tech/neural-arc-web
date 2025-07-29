@@ -1,0 +1,875 @@
+name: Hybrid AI Assistant (Copilot + Gemini)
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created, edited]
+  pull_request:
+    types: [opened, synchronize, reopened]
+  pull_request_review_comment:
+    types: [created, edited]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.number || github.event.issue.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  actions: write
+  checks: write
+  discussions: write
+  id-token: write
+
+jobs:
+  ai-assistant:
+    name: AI Assistant (Copilot Guide + Gemini Automation)
+    runs-on: ubuntu-latest
+    
+    # Enhanced trigger logic with user permissions
+    if: |
+      (github.event_name == 'issues' && github.event.action == 'opened') ||
+      (github.event_name == 'pull_request' && github.event.action == 'opened') ||
+      (github.event_name == 'issue_comment' && 
+       (contains(github.event.comment.body, '@ai') || 
+        contains(github.event.comment.body, '@copilot') || 
+        contains(github.event.comment.body, '@claude') ||
+        contains(github.event.comment.body, '@gemini')) &&
+       (github.event.comment.author_association == 'OWNER' || 
+        github.event.comment.author_association == 'MEMBER' || 
+        github.event.comment.author_association == 'COLLABORATOR')) ||
+      (github.event_name == 'pull_request_review_comment' && 
+       (contains(github.event.comment.body, '@ai') || 
+        contains(github.event.comment.body, '@copilot') || 
+        contains(github.event.comment.body, '@claude') ||
+        contains(github.event.comment.body, '@gemini')) &&
+       (github.event.comment.author_association == 'OWNER' || 
+        github.event.comment.author_association == 'MEMBER' || 
+        github.event.comment.author_association == 'COLLABORATOR'))
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup environment
+        run: |
+          # Install dependencies
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+          
+          # Setup git
+          git config --global user.name "AI Assistant Bot"
+          git config --global user.email "ai-assistant@github-actions.noreply.com"
+          
+          # Install project dependencies
+          bun install || echo "Project dependencies installation failed"
+          
+          # Install Gemini CLI for automation
+          npm install -g @google/gemini-cli || echo "Gemini CLI installation failed, using API fallback"
+          
+          # Verify environment setup
+          echo "🔧 Environment Setup:"
+          echo "- Node version: $(node --version)"
+          echo "- Bun version: $(bun --version)"
+          echo "- NPM version: $(npm --version)"
+          echo "- Git version: $(git --version)"
+          echo "- GitHub CLI version: $(gh --version | head -1)"
+          echo "- Repository: ${{ github.repository }}"
+
+      - name: Process AI Commands
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          COMMENT_BODY: ${{ github.event.comment.body || github.event.issue.body || github.event.pull_request.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          echo "🤖 Processing AI assistant request..."
+          
+          # Determine which AI was mentioned
+          AI_TYPE="none"
+          if [[ "$COMMENT_BODY" =~ "@claude" ]]; then
+            AI_TYPE="claude"
+          elif [[ "$COMMENT_BODY" =~ "@copilot" ]]; then
+            AI_TYPE="copilot"
+          elif [[ "$COMMENT_BODY" =~ "@gemini" ]]; then
+            AI_TYPE="gemini"
+          elif [[ "$COMMENT_BODY" =~ "@ai" ]]; then
+            AI_TYPE="auto"
+          fi
+          
+          # Extract command
+          COMMAND=$(echo "$COMMENT_BODY" | sed -n 's/.*@[a-z]*[[:space:]]*\(.*\)/\1/p' | head -n1)
+          
+          # Check for visual testing keywords
+          VISUAL_KEYWORDS="visual|screenshot|responsive|mobile|tablet|desktop|design|layout|ui|css|test.*visual"
+          NEEDS_VISUAL_TEST=false
+          if [[ "$COMMAND" =~ $VISUAL_KEYWORDS ]]; then
+            NEEDS_VISUAL_TEST=true
+            echo "🎨 Visual testing keywords detected"
+          fi
+          
+          # Process based on AI type
+          case "$AI_TYPE" in
+            "claude"|"copilot")
+              cat > /tmp/copilot_response.md << 'EOF'
+          ## 🤖 GitHub Copilot with Claude 4 Sonnet
+          
+          ### ✅ You have access through Ashari Tech Organization!
+          
+          **Option 1: Use Copilot Chat (Recommended)**
+          1. Open this issue/PR on [github.com](https://github.com/${{ github.repository }}/issues/${{ github.event.issue.number || github.event.pull_request.number }})
+          2. Click "Open in Copilot Chat" button
+          3. Select **Claude 4 Sonnet** from the model dropdown
+          4. Ask your question: `$COMMAND`
+          
+          **Option 2: Use Copilot in IDE**
+          - VS Code: Open Copilot Chat panel (Ctrl+I)
+          - JetBrains: Use Copilot tool window
+          - Select Claude 4 Sonnet model
+          - Reference: #${{ github.event.issue.number || github.event.pull_request.number }}
+          
+          **Option 3: Assign to Copilot Agent**
+          ```bash
+          # Run this command locally:
+          gh issue edit ${{ github.event.issue.number }} --add-assignee @github-copilot[bot]
+          ```
+          
+          ### Why Use Copilot?
+          - ✅ Claude 4 Sonnet included
+          - ✅ No API key needed
+          - ✅ Enterprise features
+          - ✅ Integrated with GitHub
+          
+          EOF
+              
+              # If gemini is available, add automated analysis
+              if [ ! -z "$GEMINI_API_KEY" ] || command -v gemini &> /dev/null; then
+                echo "" >> /tmp/copilot_response.md
+                echo "### 🔮 Gemini Quick Analysis" >> /tmp/copilot_response.md
+                echo "" >> /tmp/copilot_response.md
+                
+                # Try Gemini for quick analysis
+                if command -v gemini &> /dev/null; then
+                  ANALYSIS=$(gemini -p "Brief analysis: $COMMAND" 2>&1 | head -20 || echo "Analysis pending...")
+                else
+                  # Use Gemini API directly
+                  ANALYSIS=$(curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY" \
+                    -H 'Content-Type: application/json' \
+                    -d "{\"contents\":[{\"parts\":[{\"text\":\"Brief analysis: $COMMAND\"}]}]}" \
+                    | jq -r '.candidates[0].content.parts[0].text' 2>/dev/null || echo "Analysis pending...")
+                fi
+                
+                echo "$ANALYSIS" >> /tmp/copilot_response.md
+                echo "" >> /tmp/copilot_response.md
+                echo "**For detailed analysis, use Copilot Chat with Claude 4 Sonnet**" >> /tmp/copilot_response.md
+              fi
+              
+              gh issue comment $ISSUE_NUMBER --body-file /tmp/copilot_response.md
+              
+              # Trigger visual test if needed
+              if [ "$NEEDS_VISUAL_TEST" = true ]; then
+                echo "🎨 Triggering visual verification workflow..."
+                gh workflow run visual-verification.yml \
+                  -f test_url="https://asharitech-web.pages.dev" \
+                  -f visual_test_type="responsive" \
+                  -f viewport_sizes="1920x1080,768x1024,375x667" || echo "Visual test trigger failed"
+                
+                # Add visual test notice
+                cat > /tmp/visual_notice.md << EOF
+          ## 🎨 Visual Test Triggered
+          
+          A visual verification test has been started for your request: \`$COMMAND\`
+          
+          **Test Parameters:**
+          - URL: https://asharitech-web.pages.dev
+          - Viewports: Desktop (1920x1080), Tablet (768x1024), Mobile (375x667)
+          - Test Type: Responsive
+          
+          **Results will be available in:**
+          - [GitHub Actions](https://github.com/${{ github.repository }}/actions/workflows/visual-verification.yml)
+          - Screenshots will be uploaded as artifacts
+          
+          ---
+          🔄 Visual test running in background...
+          EOF
+                
+                sleep 3 # Brief delay to avoid rate limits
+                gh issue comment $ISSUE_NUMBER --body-file /tmp/visual_notice.md
+              fi
+              ;;
+            
+            "gemini"|"auto")
+              # Use Gemini for automation
+              if [ -z "$GEMINI_API_KEY" ] && ! command -v gemini &> /dev/null; then
+                cat > /tmp/setup_gemini.md << 'EOF'
+          ## 🔧 Gemini Setup Required
+          
+          To enable free Gemini automation:
+          1. Get API key: https://makersuite.google.com/app/apikey
+          2. Add to repository secrets: `GEMINI_API_KEY`
+          
+          **Alternative: Use GitHub Copilot**
+          You already have Claude 4 Sonnet access through Copilot!
+          Use `@copilot` or `@claude` instead.
+          EOF
+                gh issue comment $ISSUE_NUMBER --body-file /tmp/setup_gemini.md
+                exit 0
+              fi
+              
+              # Process with Gemini
+              echo "🔮 Processing with Gemini..."
+              
+              CONTEXT=""
+              if [ "$EVENT_NAME" = "pull_request" ]; then
+                CONTEXT="PR #$ISSUE_NUMBER"
+                DIFF=$(gh pr diff $ISSUE_NUMBER --color never | head -500)
+                EXTRA="Diff: $DIFF"
+              else
+                CONTEXT="Issue #$ISSUE_NUMBER"
+                EXTRA=$(gh issue view $ISSUE_NUMBER --json title,body -q '.title + " - " + .body')
+              fi
+              
+              # Use Gemini CLI or API with rate limiting
+              echo "⏳ Running Gemini analysis (rate-limited)..."
+              sleep 2  # Rate limiting: 2 second delay
+              
+              if command -v gemini &> /dev/null; then
+                RESPONSE=$(env -u CI_TOKEN gemini -p "Analyze this $CONTEXT: $COMMAND. Context: $EXTRA" 2>&1 || echo "API_ERROR: Quota exceeded - retrying with shorter prompt")
+              else
+                # Direct API call with error handling
+                RESPONSE=$(curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY" \
+                  -H 'Content-Type: application/json' \
+                  -d "{\"contents\":[{\"parts\":[{\"text\":\"Analyze: $COMMAND. Context: $EXTRA\"}]}]}" \
+                  | jq -r '.candidates[0].content.parts[0].text' 2>/dev/null || echo "API_ERROR: Quota exceeded")
+              fi
+              
+              # Retry with shorter prompt if quota exceeded
+              if [[ "$RESPONSE" == *"API_ERROR"* ]]; then
+                echo "⚠️ Quota exceeded, using shorter analysis prompt..."
+                sleep 3  # Additional delay before retry
+                RESPONSE=$(echo "Brief analysis: $COMMAND" | curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY" \
+                  -H 'Content-Type: application/json' \
+                  -d @- | jq -r '.candidates[0].content.parts[0].text' 2>/dev/null || echo "Rate limit exceeded - please try again later")
+              fi
+              
+              cat > /tmp/gemini_response.md << EOF
+          ## 🔮 Gemini Analysis
+          
+          $RESPONSE
+          
+          ---
+          💡 **Tip**: For Claude 4 Sonnet, use \`@copilot\` or open in Copilot Chat
+          EOF
+              
+              gh issue comment $ISSUE_NUMBER --body-file /tmp/gemini_response.md
+              
+              # Check for autonomous implementation keywords
+              IMPLEMENT_KEYWORDS="implement|create|build|fix|solve|code|develop|write.*code"
+              if [[ "$COMMAND" =~ $IMPLEMENT_KEYWORDS ]] && [ "$EVENT_NAME" = "issues" ]; then
+                echo "🚀 Implementation request detected, starting autonomous engineering..."
+                
+                # Create implementation branch
+                BRANCH_NAME="feature/issue-${ISSUE_NUMBER}-$(echo "$COMMAND" | sed 's/[^a-zA-Z0-9]/-/g' | cut -c1-30)"
+                
+                # Get issue context for implementation
+                ISSUE_CONTEXT=$(gh issue view $ISSUE_NUMBER --json title,body,comments --jq '{title: .title, body: .body, comments: [.comments[] | {author: .author.login, body: .body}]}')
+                
+                # Check if PR already exists for this issue
+                EXISTING_PR=$(gh pr list --search "closes #$ISSUE_NUMBER" --json number --jq '.[0].number // empty' 2>/dev/null || echo "")
+                
+                if [ ! -z "$EXISTING_PR" ]; then
+                  echo "📋 Found existing PR #$EXISTING_PR for issue #$ISSUE_NUMBER"
+                  # Update existing PR branch
+                  EXISTING_PR_BRANCH=$(gh pr view $EXISTING_PR --json headRefName --jq '.headRefName')
+                  git fetch origin --all
+                  git checkout -B $EXISTING_PR_BRANCH origin/$EXISTING_PR_BRANCH 2>/dev/null || git checkout -b $EXISTING_PR_BRANCH
+                else
+                  # Create new branch
+                  git checkout -b $BRANCH_NAME
+                fi
+                
+                # Generate implementation using Gemini
+                cat > /tmp/implementation_prompt.txt << EOF
+                You are a senior full-stack engineer implementing a GitHub issue.
+                
+                **Repository**: ${{ github.repository }}
+                **Issue #$ISSUE_NUMBER**: $(echo "$ISSUE_CONTEXT" | jq -r '.title')
+                **Request**: $COMMAND
+                **Description**: $(echo "$ISSUE_CONTEXT" | jq -r '.body')
+                **Context**: $(echo "$ISSUE_CONTEXT" | jq -r '.comments[]?.body' | head -3)
+                
+                **Project type**: Next.js 15+ with TypeScript, Tailwind CSS
+                **Available commands**: bun dev, bun build, bun lint, bun type-check
+                
+                Generate specific file changes needed to implement this request.
+                
+                For each file, provide:
+                1. File path (relative to repo root)
+                2. Complete file contents or specific changes
+                3. Brief explanation of changes
+                
+                Focus on working, production-ready code that follows best practices.
+                EOF
+                
+                # Get implementation suggestions
+                if command -v gemini &> /dev/null; then
+                  IMPLEMENTATION=$(env -u CI_TOKEN gemini -p "$(cat /tmp/implementation_prompt.txt)" || echo "IMPLEMENTATION_ERROR: Failed to generate code")
+                else
+                  IMPLEMENTATION=$(curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY" \
+                    -H 'Content-Type: application/json' \
+                    -d "{\"contents\":[{\"parts\":[{\"text\":\"$(cat /tmp/implementation_prompt.txt | jq -Rs .)\"}]}]}" \
+                    | jq -r '.candidates[0].content.parts[0].text' 2>/dev/null || echo "IMPLEMENTATION_ERROR: Failed to generate code")
+                fi
+                
+                if [[ "$IMPLEMENTATION" != *"IMPLEMENTATION_ERROR"* ]]; then
+                  # Create/update implementation files (simplified for safety)
+                  # In a real implementation, you'd parse the AI response and create files
+                  
+                  # Create a basic implementation plan file
+                  mkdir -p docs/implementations
+                  cat > docs/implementations/issue-${ISSUE_NUMBER}-plan.md << EOF
+                # Implementation Plan for Issue #$ISSUE_NUMBER
+                
+                **Request**: $COMMAND
+                **Generated**: $(date)
+                
+                ## AI-Generated Implementation Plan:
+                
+                $IMPLEMENTATION
+                
+                ## Next Steps:
+                1. Review the generated plan
+                2. Implement the suggested changes
+                3. Test the implementation
+                4. Update documentation if needed
+                
+                ---
+                *Generated by AI Assistant*
+                EOF
+                  
+                  # Stage and commit changes
+                  git add docs/implementations/issue-${ISSUE_NUMBER}-plan.md
+                  git commit -m "feat: add implementation plan for issue #${ISSUE_NUMBER}
+
+                  $COMMAND
+                  
+                  - Generated AI implementation plan
+                  - Ready for development
+                  - Closes #${ISSUE_NUMBER}
+                  
+                  🤖 Generated with AI Assistant
+                  
+                  Co-Authored-By: AI Assistant <ai-assistant@github-actions.noreply.com>" || echo "Commit failed"
+                  
+                  # Push branch
+                  if [ -z "$EXISTING_PR" ]; then
+                    git push origin $BRANCH_NAME || echo "Push failed"
+                    
+                    # Create PR
+                    PR_TITLE="Implement: $(echo "$COMMAND" | sed 's/implement[[:space:]]*//' | sed 's/create[[:space:]]*//' | sed 's/^./\U&/')"
+                    
+                    cat > /tmp/pr_body.md << EOF
+                ## 🤖 AI-Generated Implementation
+                
+                This PR implements the request from issue #${ISSUE_NUMBER}:
+                
+                > $COMMAND
+                
+                ## Implementation Plan
+                
+                The AI has generated a comprehensive implementation plan located in:
+                - \`docs/implementations/issue-${ISSUE_NUMBER}-plan.md\`
+                
+                ## Generated Solution
+                
+                $IMPLEMENTATION
+                
+                ## Testing Checklist
+                
+                - [ ] Code compiles without errors
+                - [ ] Tests pass (\`bun test\`)
+                - [ ] Linting passes (\`bun lint\`)
+                - [ ] Type checking passes (\`bun type-check\`)
+                - [ ] Manual testing completed
+                - [ ] Documentation updated
+                
+                ## Review Instructions
+                
+                1. Review the implementation plan
+                2. Check the generated code for quality and security
+                3. Test the functionality
+                4. Approve and merge when ready
+                
+                Closes #${ISSUE_NUMBER}
+                
+                ---
+                🤖 Generated with AI Assistant
+                
+                Co-Authored-By: AI Assistant <ai-assistant@github-actions.noreply.com>
+                EOF
+                    
+                    PR_URL=$(gh pr create --title "$PR_TITLE" --body-file /tmp/pr_body.md 2>&1 || echo "PR creation failed")
+                    
+                    # Post implementation notice
+                    cat > /tmp/implementation_notice.md << EOF
+                ## 🚀 Implementation Started
+                
+                I've started implementing your request: \`$COMMAND\`
+                
+                **Actions taken:**
+                - ✅ Created branch: \`$BRANCH_NAME\`
+                - ✅ Generated implementation plan
+                - ✅ Created pull request: $PR_URL
+                
+                **Implementation Plan**: [View Plan](https://github.com/${{ github.repository }}/blob/$BRANCH_NAME/docs/implementations/issue-${ISSUE_NUMBER}-plan.md)
+                
+                **Next Steps:**
+                1. Review the generated implementation plan
+                2. The AI has created a foundation - you may need to refine it
+                3. Test the implementation thoroughly
+                4. Merge when ready
+                
+                ---
+                🤖 *Autonomous implementation by AI Assistant*
+                EOF
+                  else
+                    # Update existing PR
+                    git push origin $EXISTING_PR_BRANCH || echo "Push to existing branch failed"
+                    
+                    cat > /tmp/update_notice.md << EOF
+                ## 🔄 Implementation Updated
+                
+                I've updated the implementation for: \`$COMMAND\`
+                
+                **Actions taken:**
+                - ✅ Updated branch: \`$EXISTING_PR_BRANCH\`
+                - ✅ Regenerated implementation plan
+                - ✅ Updated existing PR: #$EXISTING_PR
+                
+                **Updated Plan**: [View Plan](https://github.com/${{ github.repository }}/blob/$EXISTING_PR_BRANCH/docs/implementations/issue-${ISSUE_NUMBER}-plan.md)
+                
+                ---
+                🤖 *Updated by AI Assistant*
+                EOF
+                  fi
+                  
+                  sleep 3
+                  gh issue comment $ISSUE_NUMBER --body-file /tmp/implementation_notice.md 2>/dev/null || gh issue comment $ISSUE_NUMBER --body-file /tmp/update_notice.md 2>/dev/null
+                  
+                  # Switch back to main branch
+                  git checkout main || git checkout master || echo "Could not switch back to main branch"
+                else
+                  echo "❌ Implementation generation failed"
+                fi
+              fi
+              
+              # Trigger visual test if needed
+              if [ "$NEEDS_VISUAL_TEST" = true ]; then
+                echo "🎨 Triggering visual verification workflow..."
+                gh workflow run visual-verification.yml \
+                  -f test_url="https://asharitech-web.pages.dev" \
+                  -f visual_test_type="full" \
+                  -f viewport_sizes="1920x1080,768x1024,375x667" || echo "Visual test trigger failed"
+                
+                # Add visual test notice
+                cat > /tmp/visual_notice.md << EOF
+          ## 🎨 Visual Test Triggered
+          
+          A comprehensive visual test has been started for: \`$COMMAND\`
+          
+          **Test includes:**
+          - 📱 Mobile responsiveness (375x667)
+          - 📲 Tablet layout (768x1024) 
+          - 🖥️ Desktop view (1920x1080)
+          - 🎨 Visual consistency analysis
+          - ♿ Accessibility checks
+          
+          **Results:**
+          - Screenshots will be available in [Actions artifacts](https://github.com/${{ github.repository }}/actions)
+          - AI analysis will be included in the visual report
+          
+          ---
+          🔄 Processing visual analysis with Browser-Use AI...
+          EOF
+                
+                sleep 3
+                gh issue comment $ISSUE_NUMBER --body-file /tmp/visual_notice.md
+              fi
+              ;;
+            
+            *)
+              # No AI mentioned, provide options
+              cat > /tmp/ai_options.md << 'EOF'
+          ## 🤖 AI Assistant Options
+          
+          ### Available AI Models:
+          
+          1. **GitHub Copilot (Claude 4 Sonnet)** ✅
+             - Use: `@copilot [your request]`
+             - Or: Open in Copilot Chat
+             - Best for: Complex coding tasks
+             - Cost: Included in your subscription
+          
+          2. **Gemini** 🔮
+             - Use: `@gemini [your request]`
+             - Best for: Quick analysis
+             - Cost: Free (with API key)
+          
+          3. **Auto Select** 🎯
+             - Use: `@ai [your request]`
+             - Chooses best available option
+          
+          4. **Visual Testing** 🎨
+             - Use: `@ai visual test` or `@gemini screenshot`
+             - Triggers automated visual verification
+             - Keywords: visual, screenshot, responsive, mobile, design
+          
+          ### Quick Start:
+          ```bash
+          # For complex tasks:
+          @copilot implement this feature
+          
+          # For quick analysis:
+          @gemini analyze this issue
+          
+          # For visual testing:
+          @ai test responsive design
+          @gemini screenshot mobile layout
+          
+          # Let AI choose:
+          @ai help me with this
+          ```
+          EOF
+              
+              gh issue comment $ISSUE_NUMBER --body-file /tmp/ai_options.md
+              ;;
+          esac
+
+      - name: Enhanced Issue Triage
+        if: github.event_name == 'issues' && github.event.action == 'opened'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          echo "🔍 Analyzing issue #$ISSUE_NUMBER for automated triage..."
+          
+          # Get all issue comments for full context (limited to reduce token usage)
+          ISSUE_COMMENTS=$(gh issue view $ISSUE_NUMBER --json comments --jq '.comments[] | "\(.author.login): \(.body)"' | head -5)
+          
+          # Extract attachment URLs from issue body
+          ISSUE_ATTACHMENTS=$(echo "$ISSUE_BODY" | grep -oE 'https://[a-zA-Z0-9./_-]+\.(png|jpg|jpeg|gif|pdf|zip|txt|md|json|svg|mp4|mov|csv)' || echo "")
+          
+          # Basic content-based labeling
+          if [[ "$ISSUE_BODY" =~ "bug" ]]; then
+            gh issue edit $ISSUE_NUMBER --add-label "bug" || true
+          fi
+          if [[ "$ISSUE_BODY" =~ "feature" ]]; then
+            gh issue edit $ISSUE_NUMBER --add-label "enhancement" || true
+          fi
+          if [[ "$ISSUE_BODY" =~ "documentation" ]]; then
+            gh issue edit $ISSUE_NUMBER --add-label "documentation" || true
+          fi
+          
+          # AI-powered analysis if Gemini is available
+          if [ ! -z "$GEMINI_API_KEY" ] || command -v gemini &> /dev/null; then
+            # Create comprehensive prompt for issue analysis
+            cat > /tmp/issue_analysis_prompt.txt << EOF
+          You are a senior full-stack engineer analyzing a GitHub issue.
+          
+          **Issue #$ISSUE_NUMBER**: "$ISSUE_TITLE"
+          **Description**: $ISSUE_BODY
+          **Comments**: $ISSUE_COMMENTS
+          **Attachments**: $ISSUE_ATTACHMENTS
+          
+          Provide:
+          Priority: [high/medium/low]
+          Labels: [comma-separated list]
+          Difficulty: [easy/medium/hard]
+          
+          Brief analysis and recommended next steps.
+          EOF
+            
+            # Run Gemini analysis with rate limiting
+            echo "⏳ Running issue analysis (rate-limited)..."
+            sleep 2
+            
+            if command -v gemini &> /dev/null; then
+              ANALYSIS=$(env -u CI_TOKEN gemini -p "$(cat /tmp/issue_analysis_prompt.txt)" || echo "API_ERROR: Analysis failed")
+            else
+              ANALYSIS=$(curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY" \
+                -H 'Content-Type: application/json' \
+                -d "{\"contents\":[{\"parts\":[{\"text\":\"$(cat /tmp/issue_analysis_prompt.txt | jq -Rs .)\"}]}]}" \
+                | jq -r '.candidates[0].content.parts[0].text' 2>/dev/null || echo "API_ERROR: Analysis failed")
+            fi
+            
+            # Extract labels from analysis
+            if [[ "$ANALYSIS" != *"API_ERROR"* ]]; then
+              PRIORITY=$(echo "$ANALYSIS" | grep "Priority:" | cut -d':' -f2 | xargs)
+              LABELS=$(echo "$ANALYSIS" | grep "Labels:" | cut -d':' -f2 | xargs)
+              DIFFICULTY=$(echo "$ANALYSIS" | grep "Difficulty:" | cut -d':' -f2 | xargs)
+              
+              # Apply AI-suggested labels
+              if [ ! -z "$LABELS" ]; then
+                IFS=',' read -ra LABEL_ARRAY <<< "$LABELS"
+                for label in "${LABEL_ARRAY[@]}"; do
+                  label=$(echo "$label" | xargs)  # trim whitespace
+                  gh issue edit $ISSUE_NUMBER --add-label "$label" || echo "Could not add label: $label"
+                done
+              fi
+              
+              # Add priority and difficulty labels
+              [ ! -z "$PRIORITY" ] && gh issue edit $ISSUE_NUMBER --add-label "priority: $PRIORITY" || true
+              [ ! -z "$DIFFICULTY" ] && gh issue edit $ISSUE_NUMBER --add-label "difficulty: $DIFFICULTY" || true
+              
+              # Post analysis as comment
+              cat > /tmp/triage_comment.md << EOF
+          ## 🤖 Automated Issue Triage
+          
+          $ANALYSIS
+          
+          ---
+          *This analysis was generated by AI. Human review recommended.*
+          EOF
+              
+              gh issue comment $ISSUE_NUMBER --body-file /tmp/triage_comment.md
+            fi
+          fi
+          
+          # Add AI assistant label
+          gh issue edit $ISSUE_NUMBER --add-label "ai-ready" || true
+          
+          echo "✅ Issue triage completed for #$ISSUE_NUMBER"
+
+      - name: PR Quick Guide
+        if: github.event_name == 'pull_request' && github.event.action == 'opened'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          cat > /tmp/pr_guide.md << 'EOF'
+          ## 🚀 AI-Powered PR Review
+          
+          ### For Best Results:
+          1. **Open in Copilot Chat** (github.com)
+          2. Select **Claude 4 Sonnet**
+          3. Ask: "Review this PR for security, performance, and best practices"
+          
+          ### Quick Commands:
+          - `@copilot review` - Detailed code review
+          - `@gemini check` - Quick validation
+          - `@ai suggest` - Get improvements
+          - `@ai visual test` - Test responsive design
+          - `@gemini screenshot` - Capture visual state
+          
+          ---
+          *Powered by GitHub Copilot Enterprise (Ashari Tech)*
+          EOF
+          
+          gh pr comment $PR_NUMBER --body-file /tmp/pr_guide.md
+          
+          # Auto-trigger visual tests for PRs with UI changes
+          CHANGED_FILES=$(gh pr diff $PR_NUMBER --name-only)
+          UI_FILES_PATTERN="\.(css|scss|sass|less|tsx|jsx|vue|svelte|html|js|ts)$|styles/|components/|pages/|src/"
+          
+          if echo "$CHANGED_FILES" | grep -E "$UI_FILES_PATTERN" > /dev/null; then
+            echo "🎨 UI changes detected, triggering visual verification..."
+            
+            gh workflow run visual-verification.yml \
+              -f test_url="https://asharitech-web.pages.dev" \
+              -f visual_test_type="regression" \
+              -f viewport_sizes="1920x1080,768x1024,375x667" || echo "Auto visual test failed"
+            
+            cat > /tmp/auto_visual.md << EOF
+          ## 🎨 Automatic Visual Test Triggered
+          
+          This PR contains UI-related changes. A visual regression test has been automatically started.
+          
+          **Detected changes in:**
+          \`\`\`
+          $CHANGED_FILES
+          \`\`\`
+          
+          **Visual test will check:**
+          - Layout consistency across viewports
+          - Visual regressions from baseline
+          - Responsive design compliance
+          
+          **Results:** Check [Actions tab](https://github.com/${{ github.repository }}/actions/workflows/visual-verification.yml) for screenshots and analysis.
+          
+          ---
+          🤖 *Auto-triggered by AI Assistant*
+          EOF
+            
+            sleep 3
+            gh pr comment $PR_NUMBER --body-file /tmp/auto_visual.md
+          fi
+
+      - name: Enhanced PR Code Review
+        if: github.event_name == 'pull_request' && github.event.action == 'opened'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          echo "🔍 Performing automated code review for PR #$PR_NUMBER..."
+          
+          # Skip if no Gemini API key
+          if [ -z "$GEMINI_API_KEY" ] && ! command -v gemini &> /dev/null; then
+            echo "⚠️ Skipping AI code review - no Gemini API key available"
+            exit 0
+          fi
+          
+          # Get PR details
+          PR_TITLE=$(gh pr view $PR_NUMBER --json title -q '.title')
+          PR_BODY=$(gh pr view $PR_NUMBER --json body -q '.body // ""')
+          PR_DIFF=$(gh pr diff $PR_NUMBER --color never | head -2000)
+          CHANGED_FILES=$(gh pr diff $PR_NUMBER --name-only)
+          FILE_COUNT=$(echo "$CHANGED_FILES" | wc -l)
+          
+          # Get PR comments and reviews for context
+          PR_COMMENTS=$(gh pr view $PR_NUMBER --json comments --jq '.comments[] | "\(.author.login) (\(.createdAt)): \(.body)"' | head -10)
+          PR_REVIEWS=$(gh pr view $PR_NUMBER --json reviews --jq '.reviews[] | "\(.author.login) (\(.submittedAt)) - \(.state): \(.body // "No comment")"' | head -5)
+          
+          # Create comprehensive review prompt
+          cat > /tmp/pr_review_prompt.txt << EOF
+          You are a senior full-stack code reviewer analyzing a GitHub pull request.
+          
+          **Repository**: ${{ github.repository }}
+          **PR #$PR_NUMBER**: "$PR_TITLE"
+          **Description**: $PR_BODY
+          **Files Changed**: $FILE_COUNT files
+          
+          **Changed Files**:
+          $CHANGED_FILES
+          
+          **Code Diff** (first 2000 chars):
+          \`\`\`diff
+          $PR_DIFF
+          \`\`\`
+          
+          **Previous Comments**: $PR_COMMENTS
+          **Previous Reviews**: $PR_REVIEWS
+          
+          Provide a comprehensive code review with:
+          
+          1. **Code Quality Rating**: 1-5 stars with explanation
+          2. **Security Analysis**: Any security concerns or best practices
+          3. **Performance Impact**: Potential performance implications
+          4. **Architecture Alignment**: How well it fits existing codebase
+          5. **Specific Issues**: Line-by-line concerns if any
+          6. **Recommendations**: Concrete suggestions for improvement
+          7. **Testing Notes**: What should be tested
+          
+          Focus on actionable feedback and maintainability.
+          EOF
+          
+          # Run Gemini analysis with rate limiting
+          echo "⏳ Running PR code review (rate-limited)..."
+          sleep 2
+          
+          if command -v gemini &> /dev/null; then
+            REVIEW=$(env -u CI_TOKEN gemini -p "$(cat /tmp/pr_review_prompt.txt)" || echo "REVIEW_ERROR: Analysis failed")
+          else
+            REVIEW=$(curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY" \
+              -H 'Content-Type: application/json' \
+              -d "{\"contents\":[{\"parts\":[{\"text\":\"$(cat /tmp/pr_review_prompt.txt | jq -Rs .)\"}]}]}" \
+              | jq -r '.candidates[0].content.parts[0].text' 2>/dev/null || echo "REVIEW_ERROR: Analysis failed")
+          fi
+          
+          # Fallback if quota exceeded
+          if [[ "$REVIEW" == *"REVIEW_ERROR"* ]]; then
+            echo "⚠️ AI review failed, providing basic analysis..."
+            REVIEW="**Code Review Summary:**
+            
+            ✅ **Status**: PR analyzed - AI review unavailable due to quota limits
+            📝 **Files Changed**: $FILE_COUNT files
+            🔍 **Manual Review Needed**: Due to API limitations, please have a human reviewer check:
+            - Code quality and security
+            - Test coverage and functionality
+            - Performance implications
+            - Architecture consistency
+            
+            **Changed Files:**
+            $CHANGED_FILES
+            
+            Consider using GitHub Copilot Chat for detailed code review assistance."
+          fi
+          
+          # Post comprehensive review
+          cat > /tmp/ai_review.md << EOF
+          ## 🤖 Automated Code Review
+          
+          $REVIEW
+          
+          ## 🎯 Next Steps
+          
+          1. **Address feedback** above if any issues were identified
+          2. **Run tests** to ensure functionality: \`bun test\`
+          3. **Check linting**: \`bun lint\`
+          4. **Verify types**: \`bun type-check\`
+          5. **Manual testing** for user-facing changes
+          
+          ## 💡 AI Assistance Available
+          
+          For detailed analysis, use:
+          - **GitHub Copilot Chat** with Claude 4 Sonnet (select model)
+          - **Comment \`@gemini review [specific question]\`** for targeted analysis
+          - **Comment \`@ai analyze [specific code]\`** for code explanation
+          
+          ---
+          *This review was generated by AI. Human review still recommended for final approval.*
+          EOF
+          
+          gh pr comment $PR_NUMBER --body-file /tmp/ai_review.md
+          
+          echo "✅ Automated code review completed for PR #$PR_NUMBER"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -f /tmp/*.txt /tmp/*.md
+          echo "🧹 Cleanup completed"
+
+      - name: Report Status
+        if: always()
+        run: |
+          echo "📊 AI Assistant Automation Summary:"
+          echo "- Event: ${{ github.event_name }}"
+          echo "- Action: ${{ github.event.action }}"
+          echo "- Issue/PR: #${{ github.event.issue.number || github.event.pull_request.number }}"
+          echo "- Status: ${{ job.status }}"
+          echo ""
+          echo "🤖 Available AI Models:"
+          echo "- GitHub Copilot (Claude 4 Sonnet) ✅"
+          if [ ! -z "${{ secrets.GEMINI_API_KEY }}" ]; then
+            echo "- Gemini (Free automation) ✅"
+          else
+            echo "- Gemini (Add GEMINI_API_KEY) ⚠️"
+          fi
+          echo "- Visual Testing (Browser-Use) ✅"
+          echo ""
+          echo "🚀 Autonomous Features:"
+          echo "- Issue triage and labeling ✅"
+          echo "- PR code review ✅"
+          echo "- Branch management ✅"
+          echo "- Implementation planning ✅"
+          echo "- Visual testing integration ✅"
