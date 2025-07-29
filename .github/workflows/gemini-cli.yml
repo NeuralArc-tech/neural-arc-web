@@ -1,4 +1,4 @@
-name: Gemini CLI Integration
+name: Custom AI Integration
 
 on:
   issues:
@@ -24,8 +24,8 @@ permissions:
   id-token: write
 
 jobs:
-  gemini-automation:
-    name: Gemini CLI Automation
+  ai-automation:
+    name: Custom AI Automation
     runs-on: ubuntu-latest
 
     # Only run for users with proper permissions and @gemini mentions
@@ -58,15 +58,13 @@ jobs:
           bun install
           echo "Project dependencies installed successfully"
 
-      - name: Install Gemini CLI
+      - name: Setup Custom AI API
         run: |
-          npm install -g @google/gemini-cli
-          echo "Gemini CLI installed successfully"
-          gemini --version
+          echo "Using custom AI API endpoint: https://genapi.ashari.cloud"
+          echo "API configured successfully"
 
-      - name: Configure Gemini CLI
+      - name: Configure Environment
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Configure git for commits
@@ -89,11 +87,54 @@ jobs:
           bun run --help 2>/dev/null | grep -E "dev|build|lint|test|type-check" || echo "Project scripts from package.json:"
           cat package.json | jq -r '.scripts' 2>/dev/null || echo "No scripts found"
 
+          # Create AI API function
+          cat > /tmp/call_ai_api.sh << 'EOF'
+          #!/bin/bash
+          call_ai_api() {
+            local prompt="$1"
+            local max_retries=3
+            local retry_count=0
+            
+            while [ $retry_count -lt $max_retries ]; do
+              # Escape quotes in prompt for JSON
+              local escaped_prompt=$(echo "$prompt" | sed 's/"/\\"/g' | sed "s/'/\\'/g")
+              
+              # Call custom AI API
+              local response=$(curl -s --location 'https://genapi.ashari.cloud/v1/chat/completions' \
+                --header 'User-Agent: BrainyBuddy-API/bandung' \
+                --header 'Content-Type: application/json' \
+                --data "{
+                  \"messages\": [
+                    {
+                      \"content\": \"$escaped_prompt\",
+                      \"role\": \"user\"
+                    }
+                  ]
+                }")
+              
+              # Check if response is valid
+              if echo "$response" | jq -e '.choices[0].message.content' > /dev/null 2>&1; then
+                echo "$response" | jq -r '.choices[0].message.content'
+                return 0
+              fi
+              
+              retry_count=$((retry_count + 1))
+              echo "API call failed, retrying... ($retry_count/$max_retries)" >&2
+              sleep $((retry_count * 2))
+            done
+            
+            echo "ERROR: AI API calls failed after $max_retries attempts" >&2
+            return 1
+          }
+          EOF
+          
+          chmod +x /tmp/call_ai_api.sh
+          source /tmp/call_ai_api.sh
+
       - name: Issue Triage
         if: github.event_name == 'issues' && github.event.action == 'opened'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
@@ -229,26 +270,44 @@ jobs:
           **Remember: You are a senior engineer. Ship code when needed. We can always rollback if needed.**
           EOF
 
-          # Run Gemini analysis
-          ANALYSIS=$(env -u CI_TOKEN gemini -y -m gemini-2.5-flash -p "$(cat /tmp/issue_analysis_prompt.txt)")
+          # Load AI API function
+          source /tmp/call_ai_api.sh
+          
+          # Run AI analysis with custom API
+          echo "🤖 Calling custom AI API for analysis..."
+          ANALYSIS=$(call_ai_api "$(cat /tmp/issue_analysis_prompt.txt)")
 
-          # Extract labels from analysis
-          PRIORITY=$(echo "$ANALYSIS" | grep "Priority:" | cut -d':' -f2 | xargs)
-          LABELS=$(echo "$ANALYSIS" | grep "Labels:" | cut -d':' -f2 | xargs)
-          DIFFICULTY=$(echo "$ANALYSIS" | grep "Difficulty:" | cut -d':' -f2 | xargs)
+          # Extract labels from analysis with better error handling
+          if [ ! -z "$ANALYSIS" ] && [ "$ANALYSIS" != "ERROR: AI API calls failed after 3 attempts" ]; then
+            PRIORITY=$(echo "$ANALYSIS" | grep -i "Priority:" | cut -d':' -f2 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+            LABELS=$(echo "$ANALYSIS" | grep -i "Labels:" | cut -d':' -f2 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+            DIFFICULTY=$(echo "$ANALYSIS" | grep -i "Difficulty:" | cut -d':' -f2 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
 
-          # Apply labels using GitHub CLI
-          if [ ! -z "$LABELS" ]; then
-            IFS=',' read -ra LABEL_ARRAY <<< "$LABELS"
-            for label in "${LABEL_ARRAY[@]}"; do
-              label=$(echo "$label" | xargs)  # trim whitespace
-              gh issue edit $ISSUE_NUMBER --add-label "$label" || echo "Could not add label: $label"
-            done
+            # Apply labels using GitHub CLI with proper quoting
+            if [ ! -z "$LABELS" ]; then
+              # Clean up labels and split by comma
+              echo "$LABELS" | tr ',' '\n' | while read -r label; do
+                # Clean label of quotes and whitespace
+                clean_label=$(echo "$label" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | sed 's/^"//' | sed 's/"$//')
+                if [ ! -z "$clean_label" ]; then
+                  gh issue edit $ISSUE_NUMBER --add-label "$clean_label" || echo "Could not add label: $clean_label"
+                fi
+              done
+            fi
+
+            # Add priority and difficulty labels with proper quoting
+            if [ ! -z "$PRIORITY" ]; then
+              clean_priority=$(echo "$PRIORITY" | sed 's/^"//' | sed 's/"$//')
+              gh issue edit $ISSUE_NUMBER --add-label "priority: $clean_priority" || true
+            fi
+            
+            if [ ! -z "$DIFFICULTY" ]; then
+              clean_difficulty=$(echo "$DIFFICULTY" | sed 's/^"//' | sed 's/"$//')
+              gh issue edit $ISSUE_NUMBER --add-label "difficulty: $clean_difficulty" || true
+            fi
+          else
+            echo "⚠️ AI analysis failed, skipping automatic labeling"
           fi
-
-          # Add priority and difficulty labels
-          [ ! -z "$PRIORITY" ] && gh issue edit $ISSUE_NUMBER --add-label "priority: $PRIORITY" || true
-          [ ! -z "$DIFFICULTY" ] && gh issue edit $ISSUE_NUMBER --add-label "difficulty: $DIFFICULTY" || true
 
           # Post analysis as comment
           cat > /tmp/comment.md << EOF
@@ -271,7 +330,6 @@ jobs:
           (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '@gemini'))
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
           COMMENT_BODY: ${{ github.event.comment.body || '' }}
         run: |
@@ -377,8 +435,10 @@ jobs:
           Please provide a detailed code review.
           EOF
 
-          # Run Gemini analysis
-          REVIEW=$(env -u CI_TOKEN gemini -y -m gemini-2.5-flash -p "$(cat /tmp/diff_analysis_prompt.txt)")
+          # Load AI API function and run analysis
+          source /tmp/call_ai_api.sh
+          echo "🤖 Calling custom AI API for PR review..."
+          REVIEW=$(call_ai_api "$(cat /tmp/diff_analysis_prompt.txt)")
 
           # Post review as comment
           cat > /tmp/review_comment.md << EOF
@@ -400,7 +460,6 @@ jobs:
           (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@gemini'))
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           COMMENT_BODY: ${{ github.event.comment.body }}
           ISSUE_NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
           COMMENT_ID: ${{ github.event.comment.id }}
@@ -652,8 +711,10 @@ jobs:
           Focus on being practical and specific to this codebase context.
           EOF
 
-          # Run Gemini analysis
-          RESPONSE=$(env -u CI_TOKEN gemini -y -m gemini-2.5-flash -p "$(cat /tmp/custom_command_prompt.txt)")
+          # Load AI API function and run analysis
+          source /tmp/call_ai_api.sh
+          echo "🤖 Calling custom AI API for command processing..."
+          RESPONSE=$(call_ai_api "$(cat /tmp/custom_command_prompt.txt)")
 
           # Post response as comment
           cat > /tmp/response_comment.md << EOF
