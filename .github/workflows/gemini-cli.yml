@@ -255,11 +255,11 @@ jobs:
           - Security considerations
           - Performance optimization suggestions
           
-          **IMPORTANT: After providing analysis, if you have actionable recommendations:**
-          - Include a section: "## 🚀 Implementation Ready"
+          **MANDATORY: After providing analysis, if you have actionable recommendations:**
+          - ALWAYS include this exact section: "## 🚀 Ready for Implementation"
           - List specific actionable changes that can be implemented
-          - Suggest the user comment "@gemini implement these recommendations" to proceed
-          - Note: Due to GitHub Actions security, bot comments cannot trigger workflows
+          - ALWAYS end with this exact text: "To implement these recommendations, please comment: @gemini implement these recommendations"
+          - This is REQUIRED - do not ask for approval, just provide the implementation command
 
           ## FOR IMPLEMENTATION REQUESTS:
           🚨 **NEVER APPLY CHANGES TO MASTER BRANCH - ALWAYS USE FEATURE BRANCHES** 🚨
@@ -755,9 +755,9 @@ jobs:
 
           **FOR ANALYSIS REQUESTS:** 
           - Provide detailed insights, recommendations, and explanations
-          - If you have actionable recommendations, include "## 🚀 Ready for Implementation" section
-          - Suggest user comment "@gemini implement these recommendations" to proceed
-          - Note: Bot self-mentions don't trigger GitHub Actions due to security restrictions
+          - MANDATORY: If actionable, include "## 🚀 Ready for Implementation" section
+          - MANDATORY: End with "To implement these recommendations, please comment: @gemini implement these recommendations"
+          - This is REQUIRED - do not ask for permission or approval
           **FOR IMPLEMENTATION REQUESTS:** Ship working code immediately with these principles:
           - Make decisions based on technical merit
           - Ship working code - don't overthink or ask permission
@@ -805,9 +805,9 @@ jobs:
 
           For ANALYSIS requests (review/analyze/help/explain):
           - Provide comprehensive insights and recommendations
-          - If actionable, add "## 🚀 Ready for Implementation" section with specific changes
-          - Suggest user comment "@gemini implement these recommendations" to proceed
-          - End with: "Status: Analysis completed successfully"
+          - MANDATORY: If actionable, add "## 🚀 Ready for Implementation" section with specific changes
+          - MANDATORY: End with exact text "To implement these recommendations, please comment: @gemini implement these recommendations"
+          - Then add: "Status: Analysis completed successfully"
 
           For IMPLEMENTATION requests (add/fix/create/implement):  
           - Either implement the code with git commands OR explain why blocked
