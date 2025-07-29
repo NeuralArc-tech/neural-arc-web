@@ -1,6 +1,0 @@
-# This file has been renamed to .disabled to prevent conflicts
-# The hybrid-ai-assistant.yml now handles @gemini commands
-# along with @copilot, @claude, and @ai commands
-
-# To re-enable: rename back to .yml
-# To delete: remove this file entirely
