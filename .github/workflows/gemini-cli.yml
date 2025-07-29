@@ -800,6 +800,22 @@ jobs:
           10. Report the PR URL immediately
           
           **BRANCH PROTECTION: Always work in feature branches, never master/main**
+          
+          **IMPORTANT: Since you cannot execute commands directly, provide them in this format:**
+          
+          IMPLEMENTATION COMMANDS:
+          git checkout -b feature/issue-${ISSUE_NUMBER}-description
+          git add .
+          git commit -m "feat: implement feature description"
+          git push origin feature/issue-${ISSUE_NUMBER}-description
+          gh pr create --title "Title" --body "Description closes #${ISSUE_NUMBER}"
+          END COMMANDS
+          
+          **For file creation/modification, use this format OUTSIDE the commands block:**
+          
+          FILE: path/to/file.ext
+          [entire file content here]
+          END FILE
 
           **IMPLEMENTATION SCOPE - BE AGGRESSIVE:**
           - UI components and styling changes
@@ -847,6 +863,48 @@ jobs:
           source /tmp/call_ai_api.sh
           echo "🤖 Calling custom AI API for command processing..."
           RESPONSE=$(call_ai_api "$(cat /tmp/custom_command_prompt.txt)")
+          
+          # Check if AI wants to implement code
+          if echo "$RESPONSE" | grep -q "IMPLEMENTATION COMMANDS:"; then
+            echo "🚀 Implementation commands detected!"
+            
+            # Extract commands between markers
+            COMMANDS=$(echo "$RESPONSE" | sed -n '/^IMPLEMENTATION COMMANDS:/,/^END COMMANDS/p' | sed '1d;$d')
+            
+            # Extract file creation instructions
+            FILE_CONTENTS=$(echo "$RESPONSE" | sed -n '/^FILE:.*$/,/^END FILE/p')
+            
+            echo "📝 Executing implementation..."
+            
+            # Execute commands line by line
+            while IFS= read -r cmd; do
+              # Skip empty lines and comments
+              if [[ -z "$cmd" || "$cmd" =~ ^#.*$ ]]; then
+                continue
+              fi
+              
+              # Execute git/gh commands
+              if [[ "$cmd" =~ ^(git|gh|bun|npm) ]]; then
+                echo "Executing: $cmd"
+                eval "$cmd" || echo "Warning: Command failed: $cmd"
+              fi
+            done <<< "$COMMANDS"
+            
+            # Process file creations if any
+            if [ ! -z "$FILE_CONTENTS" ]; then
+              while IFS= read -r line; do
+                if [[ "$line" =~ ^FILE:\ (.+)$ ]]; then
+                  FILENAME="${BASH_REMATCH[1]}"
+                  echo "Creating file: $FILENAME"
+                  # Extract content until END FILE
+                  FILE_CONTENT=$(echo "$FILE_CONTENTS" | sed -n "/^FILE: $FILENAME$/,/^END FILE/p" | sed '1d;$d')
+                  echo "$FILE_CONTENT" > "$FILENAME"
+                fi
+              done <<< "$FILE_CONTENTS"
+            fi
+            
+            echo "✅ Implementation commands executed"
+          fi
 
           # Post response as comment
           cat > /tmp/response_comment.md << EOF
