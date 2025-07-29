@@ -110,7 +110,7 @@ When you open a PR with UI changes (CSS, JS, components), the system:
 - **Regression**: For automatic PR testing
 
 ### **Target URL:**
-- Default: `https://asharitech-web.pages.dev`
+- Default: `https://neural-arc-web.vercel.app`
 - Customizable via workflow parameters
 
 ## 🔄 **Workflow Sequence**

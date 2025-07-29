@@ -200,7 +200,7 @@ jobs:
           
       - name: Run visual verification
         env:
-          TEST_URL: ${{ inputs.test_url || 'https://asharitech-web.pages.dev' }}
+          TEST_URL: ${{ inputs.test_url || 'https://neural-arc-web.vercel.app' }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           python visual_test.py "$TEST_URL" "${{ inputs.viewport_sizes }}" "${{ inputs.visual_test_type }}"

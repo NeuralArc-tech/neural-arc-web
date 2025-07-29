@@ -182,7 +182,7 @@ jobs:
               if [ "$NEEDS_VISUAL_TEST" = true ]; then
                 echo "🎨 Triggering visual verification workflow..."
                 gh workflow run visual-verification.yml \
-                  -f test_url="https://asharitech-web.pages.dev" \
+                  -f test_url="https://neural-arc-web.vercel.app" \
                   -f visual_test_type="responsive" \
                   -f viewport_sizes="1920x1080,768x1024,375x667" || echo "Visual test trigger failed"
                 
@@ -193,7 +193,7 @@ jobs:
           A visual verification test has been started for your request: \`$COMMAND\`
           
           **Test Parameters:**
-          - URL: https://asharitech-web.pages.dev
+          - URL: https://neural-arc-web.vercel.app
           - Viewports: Desktop (1920x1080), Tablet (768x1024), Mobile (375x667)
           - Test Type: Responsive
           
@@ -479,7 +479,7 @@ jobs:
               if [ "$NEEDS_VISUAL_TEST" = true ]; then
                 echo "🎨 Triggering visual verification workflow..."
                 gh workflow run visual-verification.yml \
-                  -f test_url="https://asharitech-web.pages.dev" \
+                  -f test_url="https://neural-arc-web.vercel.app" \
                   -f visual_test_type="full" \
                   -f viewport_sizes="1920x1080,768x1024,375x667" || echo "Visual test trigger failed"
                 
