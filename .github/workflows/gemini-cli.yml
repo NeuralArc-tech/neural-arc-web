@@ -280,8 +280,16 @@ jobs:
           You MUST start your response with these exact fields:
 
           Priority: [high/medium/low]
-          Labels: [specific, comma-separated, labels]
+          Labels: [maximum 3 most relevant labels only - choose the most important ones]
           Difficulty: [easy/medium/hard]
+          
+          **LABEL SELECTION RULES:**
+          - Choose MAXIMUM 3 labels that best represent the issue
+          - Avoid redundant or overlapping labels
+          - Focus on the primary type (bug/enhancement/documentation)
+          - Add one technical area if relevant (ui/ux, performance, security)
+          - Only add specialty labels if truly essential
+          - DO NOT use generic labels like "recommendations" unless no better option exists
 
           ## Analysis
           [Your detailed analysis here]
@@ -330,8 +338,17 @@ jobs:
 
             # Apply labels using GitHub CLI with proper quoting
             if [ ! -z "$LABELS" ]; then
+              # Limit to maximum 3 labels to avoid clutter
+              label_count=0
+              max_labels=3
+              
               # Clean up labels and split by comma
               echo "$LABELS" | tr ',' '\n' | while read -r label; do
+                # Stop if we've reached the maximum
+                if [ $label_count -ge $max_labels ]; then
+                  echo "Skipping additional labels (max $max_labels reached)"
+                  break
+                fi
                 # Clean label of quotes and whitespace
                 clean_label=$(echo "$label" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | sed 's/^"//' | sed 's/"$//')
                 if [ ! -z "$clean_label" ]; then
@@ -352,6 +369,8 @@ jobs:
                   
                   # Apply the label
                   gh issue edit $ISSUE_NUMBER --add-label "$clean_label" || echo "Could not add label: $clean_label"
+                  label_count=$((label_count + 1))
+                  echo "Applied label $label_count/$max_labels: $clean_label"
                 fi
               done
             fi
